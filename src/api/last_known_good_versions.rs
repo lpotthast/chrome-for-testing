@@ -5,7 +5,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct Downloads {
+pub struct Downloads {
     pub chrome: Vec<Download>,
     pub chromedriver: Vec<Download>,
     #[expect(unused)]
@@ -13,7 +13,7 @@ pub(crate) struct Downloads {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct VersionInChannel {
+pub struct VersionInChannel {
     pub channel: Channel,
     pub version: Version,
     pub revision: String,
@@ -21,14 +21,14 @@ pub(crate) struct VersionInChannel {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct LastKnownGoodVersions {
+pub struct LastKnownGoodVersions {
     #[serde(with = "time::serde::rfc3339")]
     #[expect(unused)]
     pub timestamp: time::OffsetDateTime,
     pub channels: HashMap<Channel, VersionInChannel>,
 }
 
-pub(crate) async fn request(client: reqwest::Client) -> anyhow::Result<LastKnownGoodVersions> {
+pub async fn request(client: reqwest::Client) -> anyhow::Result<LastKnownGoodVersions> {
     /// JSON Example:
     /// ```json
     /// {

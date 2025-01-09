@@ -3,13 +3,13 @@ use crate::api::{Download, HasVersion};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct Downloads {
+pub struct Downloads {
     pub chrome: Vec<Download>,
     pub chromedriver: Option<Vec<Download>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct VersionWithoutChannel {
+pub struct VersionWithoutChannel {
     pub version: Version,
     pub revision: String,
     pub downloads: Downloads,
@@ -22,14 +22,14 @@ impl HasVersion for VersionWithoutChannel {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct KnownGoodVersions {
+pub struct KnownGoodVersions {
     #[serde(with = "time::serde::rfc3339")]
     #[expect(unused)]
     pub timestamp: time::OffsetDateTime,
     pub versions: Vec<VersionWithoutChannel>,
 }
 
-pub(crate) async fn request(client: reqwest::Client) -> anyhow::Result<KnownGoodVersions> {
+pub async fn request(client: reqwest::Client) -> anyhow::Result<KnownGoodVersions> {
     /// JSON Example:
     /// ```json
     /// {
