@@ -5,7 +5,5 @@
 //!
 //! Chrome documentation can be found here: https://github.com/GoogleChromeLabs/chrome-for-testing#json-api-endpoints
 
-use api::{known_good_versions, last_known_good_versions};
-
 pub mod api;
 pub mod chromedriver;

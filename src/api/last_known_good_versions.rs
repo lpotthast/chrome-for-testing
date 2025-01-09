@@ -1,6 +1,6 @@
 use crate::api::channel::Channel;
 use crate::api::version::Version;
-use crate::api::{Download, HasVersion};
+use crate::api::Download;
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -8,7 +8,6 @@ use std::collections::HashMap;
 pub struct Downloads {
     pub chrome: Vec<Download>,
     pub chromedriver: Vec<Download>,
-    #[expect(unused)]
     pub chrome_headless_shell: Vec<Download>,
 }
 
@@ -23,7 +22,6 @@ pub struct VersionInChannel {
 #[derive(Debug, Clone, Deserialize)]
 pub struct LastKnownGoodVersions {
     #[serde(with = "time::serde::rfc3339")]
-    #[expect(unused)]
     pub timestamp: time::OffsetDateTime,
     pub channels: HashMap<Channel, VersionInChannel>,
 }

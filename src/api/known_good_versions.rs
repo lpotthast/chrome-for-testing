@@ -1,5 +1,5 @@
 use crate::api::version::Version;
-use crate::api::{Download, HasVersion};
+use crate::api::Download;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -15,16 +15,9 @@ pub struct VersionWithoutChannel {
     pub downloads: Downloads,
 }
 
-impl HasVersion for VersionWithoutChannel {
-    fn version(&self) -> Version {
-        self.version
-    }
-}
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct KnownGoodVersions {
     #[serde(with = "time::serde::rfc3339")]
-    #[expect(unused)]
     pub timestamp: time::OffsetDateTime,
     pub versions: Vec<VersionWithoutChannel>,
 }
