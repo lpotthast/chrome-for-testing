@@ -57,3 +57,14 @@ pub async fn request(client: reqwest::Client) -> anyhow::Result<KnownGoodVersion
         .await?;
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[tokio::test]
+    async fn can_query_known_good_versions_api_endpoint_and_deserialize_response() -> anyhow::Result<()> {
+        let data = super::request(reqwest::Client::new()).await?;
+        dbg!(&data);
+        Ok(())
+    }
+}

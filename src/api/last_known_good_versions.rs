@@ -7,7 +7,14 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Downloads {
     pub chrome: Vec<Download>,
+
     pub chromedriver: Vec<Download>,
+
+    /// The "chrome-headless-shell" binary provides the "old" headless mode of Chrome, as described
+    /// in [this blog post](https://developer.chrome.com/blog/chrome-headless-shell).
+    /// For standard automated web-ui testing, you should pretty much always use the regular
+    /// `chrome` binary instead.
+    #[serde(rename = "chrome-headless-shell")]
     pub chrome_headless_shell: Vec<Download>,
 }
 
@@ -106,4 +113,17 @@ pub async fn request(client: reqwest::Client) -> anyhow::Result<LastKnownGoodVer
         .json::<LastKnownGoodVersions>()
         .await?;
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response(
+    ) -> anyhow::Result<()> {
+        let data = request(reqwest::Client::new()).await?;
+        dbg!(&data);
+        Ok(())
+    }
 }
