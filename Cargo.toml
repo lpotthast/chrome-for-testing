@@ -10,4 +10,5 @@ time = { version = "0.3.37", features = ["serde", "parsing"] }
 anyhow = "1.0.95"
 
 [dev-dependencies]
+assertr = { git = "https://github.com/lpotthast/assertr", branch = "main" }
 tokio = { version = "1.43.0", features = ["full"] }
