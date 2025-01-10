@@ -17,7 +17,6 @@ through `reqwest`.
 
 ## chrome-for-testing-manager
 
-You may also want to check
-out [https://github.com/lpotthast/chrome-for-testing-manager](https://github.com/lpotthast/chrome-for-testing-manager),
-a crete building upon this one to allow easy selection and installation of chrome-for-testing versions. Also comes with
-support for the [thirtyfour](https://crates.io/crates/thirtyfour) crate.
+You may also want to check out [https://github.com/lpotthast/chrome-for-testing-manager](https://github.com/lpotthast/chrome-for-testing-manager),
+a crate building upon this one to allow easy selection and installation of chrome-for-testing versions.
+It also comes with support for the [thirtyfour](https://crates.io/crates/thirtyfour) crate.
