@@ -2,6 +2,16 @@
 name = "chrome-for-testing"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.78.0"
+repository = "https://github.com/lpotthast/chrome-for-testing"
+description = """
+Implementation of the chrome-for-testing JSON API.
+"""
+categories = ["web-programming", "development-tools::testing"]
+keywords = ["chrome", "testing", "chromedriver"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+authors = ["Lukas Potthast <privat@lukas-potthast.de>"]
 
 [dependencies]
 reqwest = { version = "0.12.12", features = ["json"] }
