@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.80.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
 description = """
-Implementation of the chrome-for-testing JSON API.
+Interact with the chrome-for-testing JSON API.
 """
 categories = ["web-programming", "development-tools::testing"]
 keywords = ["chrome", "testing", "chromedriver"]
