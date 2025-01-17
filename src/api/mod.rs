@@ -1,6 +1,8 @@
 use crate::api::version::Version;
 use platform::Platform;
+use reqwest::Url;
 use serde::Deserialize;
+use std::sync::LazyLock;
 
 pub mod channel;
 pub mod platform;
@@ -12,7 +14,10 @@ pub mod known_good_versions;
 /// The last working releases for each channel.
 pub mod last_known_good_versions;
 
-#[derive(Debug, Clone, Deserialize)]
+static API_BASE_URL: LazyLock<Url> =
+    LazyLock::new(|| Url::parse("https://googlechromelabs.github.io").unwrap());
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Download {
     pub platform: Platform,
     pub url: String,

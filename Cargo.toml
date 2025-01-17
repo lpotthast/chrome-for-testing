@@ -2,7 +2,7 @@
 name = "chrome-for-testing"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.78.0"
+rust-version = "1.80.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
 description = """
 Implementation of the chrome-for-testing JSON API.
@@ -16,9 +16,12 @@ authors = ["Lukas Potthast <privat@lukas-potthast.de>"]
 [dependencies]
 reqwest = { version = "0.12.12", features = ["json"] }
 serde = { version = "1.0.217", features = ["derive"] }
-time = { version = "0.3.37", features = ["serde", "parsing"] }
-anyhow = "1.0.95"
+serde_json = "1.0.135"
+thiserror = "2.0.11"
+time = { version = "0.3.37", features = ["serde", "parsing", "macros"] }
+url = "2.5.4"
 
 [dev-dependencies]
-assertr = { git = "https://github.com/lpotthast/assertr", branch = "main" }
+assertr = "0.1.0"
+mockito = "1.6.1"
 tokio = { version = "1.43.0", features = ["full"] }

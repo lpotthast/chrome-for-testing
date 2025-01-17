@@ -21,7 +21,7 @@ mod tests {
     use assertr::prelude::*;
 
     #[test]
-    fn display_impl_formats_channels_as_expected(){
+    fn display_impl_formats_channels_as_expected() {
         assert_that(format!("{}", Channel::Stable)).is_equal_to("Stable");
         assert_that(format!("{}", Channel::Beta)).is_equal_to("Beta");
         assert_that(format!("{}", Channel::Dev)).is_equal_to("Dev");
