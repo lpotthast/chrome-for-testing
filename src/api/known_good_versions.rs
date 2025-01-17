@@ -45,16 +45,19 @@ pub async fn request_with_base_url(
 
 #[cfg(test)]
 mod tests {
-    use crate::api::known_good_versions::{
-        Downloads, KnownGoodVersions, VersionWithoutChannel,
-        KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH,
-    };
+    use super::*;
     use crate::api::platform::Platform;
     use crate::api::version::Version;
     use crate::api::Download;
     use assertr::prelude::*;
     use time::macros::datetime;
     use url::Url;
+
+    #[tokio::test]
+    async fn can_request_from_real_world_endpoint() {
+        let result = request(reqwest::Client::new()).await;
+        assert_that(result).is_ok();
+    }
 
     //noinspection DuplicatedCode
     #[tokio::test]
@@ -72,7 +75,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = super::request_with_base_url(reqwest::Client::new(), url)
+        let data = request_with_base_url(reqwest::Client::new(), url)
             .await
             .unwrap();
 

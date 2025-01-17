@@ -62,6 +62,12 @@ mod tests {
     use time::macros::datetime;
     use url::Url;
 
+    #[tokio::test]
+    async fn can_request_from_real_world_endpoint() {
+        let result = request(reqwest::Client::new()).await;
+        assert_that(result).is_ok();
+    }
+
     //noinspection DuplicatedCode
     #[tokio::test]
     async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() {
