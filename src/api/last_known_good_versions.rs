@@ -119,13 +119,12 @@ pub async fn request(client: reqwest::Client) -> Result<LastKnownGoodVersions> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::Result;
+    use assertr::prelude::*;
 
     #[tokio::test]
-    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() -> Result<()>
-    {
-        let data = request(reqwest::Client::new()).await?;
+    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() {
+        let result = request(reqwest::Client::new()).await;
+        let data = assert_that(result).is_ok().unwrap_inner();
         dbg!(&data);
-        Ok(())
     }
 }
