@@ -1,6 +1,7 @@
 use crate::api::channel::Channel;
 use crate::api::version::Version;
 use crate::api::Download;
+use crate::error::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -33,7 +34,7 @@ pub struct LastKnownGoodVersions {
     pub channels: HashMap<Channel, VersionInChannel>,
 }
 
-pub async fn request(client: reqwest::Client) -> anyhow::Result<LastKnownGoodVersions> {
+pub async fn request(client: reqwest::Client) -> Result<LastKnownGoodVersions> {
     /// JSON Example:
     /// ```json
     /// {
@@ -118,10 +119,11 @@ pub async fn request(client: reqwest::Client) -> anyhow::Result<LastKnownGoodVer
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::Result;
 
     #[tokio::test]
-    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response(
-    ) -> anyhow::Result<()> {
+    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() -> Result<()>
+    {
         let data = request(reqwest::Client::new()).await?;
         dbg!(&data);
         Ok(())

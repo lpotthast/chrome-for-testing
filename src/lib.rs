@@ -7,3 +7,4 @@
 
 pub mod api;
 pub mod chromedriver;
+pub mod error;

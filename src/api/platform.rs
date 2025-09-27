@@ -1,4 +1,7 @@
+use crate::error::Error;
+use crate::error::Result;
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
 
@@ -30,26 +33,39 @@ impl Display for Platform {
 
 impl Platform {
     /// Detect the platform identifier that should be used for the current system.
-    pub fn detect() -> Platform {
+    pub fn detect() -> Result<Platform> {
         match consts::OS {
-            "windows" => match consts::ARCH {
-                "x86" => Platform::Win32,
-                "x86_64" => Platform::Win64,
-                _ => panic!("Unsupported architecture"),
+            os @ "windows" => match consts::ARCH {
+                "x86" => Ok(Platform::Win32),
+                "x86_64" => Ok(Platform::Win64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            "linux" => match consts::ARCH {
-                "x86_64" => Platform::Linux64,
-                _ => panic!("Unsupported architecture"),
+            os @ "linux" => match consts::ARCH {
+                "x86_64" => Ok(Platform::Linux64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            "macos" => match consts::ARCH {
-                "x86_64" => Platform::MacX64,
-                "arm" | "aarch64" => Platform::MacArm64,
-                _ => panic!("Unsupported architecture"),
+            os @ "macos" => match consts::ARCH {
+                "x86_64" => Ok(Platform::MacX64),
+                "arm" | "aarch64" => Ok(Platform::MacArm64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            _ => panic!("Unsupported OS"),
+            os => Err(Error::UnsupportedPlatform {
+                os: Cow::Borrowed(os),
+                arch: Cow::Borrowed(consts::ARCH),
+            }),
         }
     }
 
+    /// Filename of the chrome binary.
     pub fn chrome_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 => "chrome",
@@ -58,6 +74,7 @@ impl Platform {
         }
     }
 
+    /// Filename of the chromedriver binary.
     pub fn chromedriver_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",

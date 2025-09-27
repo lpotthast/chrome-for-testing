@@ -1,5 +1,6 @@
 use crate::api::version::Version;
 use crate::api::Download;
+use crate::error::Result;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -22,7 +23,7 @@ pub struct KnownGoodVersions {
     pub versions: Vec<VersionWithoutChannel>,
 }
 
-pub async fn request(client: reqwest::Client) -> anyhow::Result<KnownGoodVersions> {
+pub async fn request(client: reqwest::Client) -> Result<KnownGoodVersions> {
     /// JSON Example:
     /// ```json
     /// {
@@ -60,10 +61,10 @@ pub async fn request(client: reqwest::Client) -> anyhow::Result<KnownGoodVersion
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Result;
 
     #[tokio::test]
-    async fn can_query_known_good_versions_api_endpoint_and_deserialize_response(
-    ) -> anyhow::Result<()> {
+    async fn can_query_known_good_versions_api_endpoint_and_deserialize_response() -> Result<()> {
         let data = super::request(reqwest::Client::new()).await?;
         dbg!(&data);
         Ok(())
