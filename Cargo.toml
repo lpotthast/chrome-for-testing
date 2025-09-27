@@ -1,6 +1,6 @@
 [package]
 name = "chrome-for-testing"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.78.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
@@ -20,5 +20,5 @@ time = { version = "0.3.37", features = ["serde", "parsing"] }
 anyhow = "1.0.95"
 
 [dev-dependencies]
-assertr = { git = "https://github.com/lpotthast/assertr", branch = "main" }
+assertr = "0.3.9"
 tokio = { version = "1.43.0", features = ["full"] }
