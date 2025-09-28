@@ -30,8 +30,10 @@
 //! ```rust
 //! #[tokio::main]
 //! async fn main() {
+//!     use chrome_for_testing::api::known_good_versions::KnownGoodVersions;
+//!
 //!     let client = reqwest::Client::new();
-//!     match chrome_for_testing::api::known_good_versions::request(client).await {
+//!     match KnownGoodVersions::fetch(client).await {
 //!         Ok(data) => println!("Successfully fetched Chrome versions: {:?}", data),
 //!         Err(e) => println!("Error occurred: {}", e),
 //!     }

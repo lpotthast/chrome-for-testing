@@ -1,6 +1,5 @@
 use crate::api::version::Version;
 use crate::api::{Download, API_BASE_URL};
-use crate::error::Error;
 use crate::error::Result;
 use serde::Deserialize;
 
@@ -78,7 +77,7 @@ impl KnownGoodVersions {
     /// Unlike the "last known good versions" API, this includes all historical versions without
     /// channel assignments.
     pub async fn fetch(client: reqwest::Client) -> Result<Self> {
-        fetch_with_base_url(client, API_BASE_URL.clone()).await
+        Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
     }
 
     pub async fn fetch_with_base_url(
@@ -97,9 +96,8 @@ impl KnownGoodVersions {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::known_good_versions::KnownGoodVersions;
-    use assertr::prelude::*;
     use super::*;
+    use crate::api::known_good_versions::KnownGoodVersions;
     use crate::api::platform::Platform;
     use crate::api::version::Version;
     use crate::api::Download;
@@ -108,12 +106,8 @@ mod tests {
     use url::Url;
 
     #[tokio::test]
-    async fn can_query_known_good_versions_api_endpoint_and_deserialize_response() {
-        let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
-        let data = assert_that(result).is_ok().unwrap_inner();
-        dbg!(&data);
     async fn can_request_from_real_world_endpoint() {
-        let result = request(reqwest::Client::new()).await;
+        let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
         assert_that(result).is_ok();
     }
 
@@ -133,7 +127,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = request_with_base_url(reqwest::Client::new(), url)
+        let data = KnownGoodVersions::fetch_with_base_url(reqwest::Client::new(), url)
             .await
             .unwrap();
 

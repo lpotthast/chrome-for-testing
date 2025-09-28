@@ -19,8 +19,12 @@ pub mod known_good_versions;
 /// The last working releases for each channel.
 pub mod last_known_good_versions;
 
-static API_BASE_URL: LazyLock<Url> =
-    LazyLock::new(|| Url::parse("https://googlechromelabs.github.io").unwrap());
+/// The standard chrome-for-testing API endpoint protocol and hostname.
+///
+/// Consult <https://github.com/GoogleChromeLabs/chrome-for-testing#json-api-endpoints>
+/// for verification.
+pub static API_BASE_URL: LazyLock<Url> =
+    LazyLock::new(|| Url::parse("https://googlechromelabs.github.io").expect("Valid URL"));
 
 /// Represents a download link for a specific platform.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

@@ -1,7 +1,6 @@
 use crate::api::channel::Channel;
 use crate::api::version::Version;
 use crate::api::{Download, API_BASE_URL};
-use crate::error::Error;
 use crate::error::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -130,39 +129,41 @@ impl LastKnownGoodVersions {
     ///
     /// Returns the most recent version for each Chrome release channel (Stable, Beta, Dev, Canary).
     pub async fn fetch(client: reqwest::Client) -> Result<Self> {
-        fetch_with_base_url(client, API_BASE_URL.clone()).await
+        Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
     }
 
     pub async fn fetch_with_base_url(
         client: reqwest::Client,
         base_url: reqwest::Url,
-    ) -> Result<LastKnownGoodVersions, Error> {
+    ) -> Result<LastKnownGoodVersions> {
         let last_known_good_versions = client
-                .get(base_url.join(LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
-                .send()
-                .await?
-                .json::<Self>()
-                .await?;
+            .get(base_url.join(LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
+            .send()
+            .await?
+            .json::<Self>()
+            .await?;
         Ok(last_known_good_versions)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::api::last_known_good_versions::LastKnownGoodVersions;
-    use assertr::prelude::*;
+    use crate::api::channel::Channel;
+    use crate::api::last_known_good_versions::{
+        Downloads, LastKnownGoodVersions, VersionInChannel,
+        LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH,
+    };
     use crate::api::platform::Platform;
+    use crate::api::version::Version;
+    use crate::api::Download;
     use assertr::prelude::*;
+    use std::collections::HashMap;
     use time::macros::datetime;
     use url::Url;
 
     #[tokio::test]
-    async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() {
-        let result = LastKnownGoodVersions::fetch(reqwest::Client::new()).await;
-        let data = assert_that(result).is_ok().unwrap_inner();
-        dbg!(&data);
     async fn can_request_from_real_world_endpoint() {
-        let result = request(reqwest::Client::new()).await;
+        let result = LastKnownGoodVersions::fetch(reqwest::Client::new()).await;
         assert_that(result).is_ok();
     }
 
@@ -182,7 +183,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = request_with_base_url(reqwest::Client::new(), url)
+        let data = LastKnownGoodVersions::fetch_with_base_url(reqwest::Client::new(), url)
             .await
             .unwrap();
 
