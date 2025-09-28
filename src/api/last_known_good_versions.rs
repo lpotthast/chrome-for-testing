@@ -5,10 +5,14 @@ use crate::error::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// Download links for Chrome, ChromeDriver, and Chrome Headless Shell binaries for various
+/// platforms.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Downloads {
+    /// Download links for Chrome binaries for various platforms.
     pub chrome: Vec<Download>,
 
+    /// Download links for ChromeDriver binaries for various platforms.
     pub chromedriver: Vec<Download>,
 
     /// The "chrome-headless-shell" binary provides the "old" headless mode of Chrome, as described
@@ -19,21 +23,36 @@ pub struct Downloads {
     pub chrome_headless_shell: Vec<Download>,
 }
 
+/// A Chrome version entry with channel information.
 #[derive(Debug, Clone, Deserialize)]
 pub struct VersionInChannel {
+    /// The release channel this version belongs to.
     pub channel: Channel,
+
+    /// The version identifier.
     pub version: Version,
+
+    /// The Chromium revision number.
     pub revision: String,
+
+    /// Available downloads for this version.
     pub downloads: Downloads,
 }
 
+/// Response structure for the "last known good versions" API endpoint.
 #[derive(Debug, Clone, Deserialize)]
 pub struct LastKnownGoodVersions {
+    /// When this data was last updated.
     #[serde(with = "time::serde::rfc3339")]
     pub timestamp: time::OffsetDateTime,
+
+    /// The latest known good version for each release channel.
     pub channels: HashMap<Channel, VersionInChannel>,
 }
 
+/// Fetches the last known good versions from the Chrome for Testing API.
+///
+/// Returns the most recent version for each Chrome release channel (Stable, Beta, Dev, Canary).
 pub async fn request(client: reqwest::Client) -> Result<LastKnownGoodVersions> {
     /// JSON Example:
     /// ```json

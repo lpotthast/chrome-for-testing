@@ -2,23 +2,34 @@ use crate::api::version::Version;
 use platform::Platform;
 use serde::Deserialize;
 
+/// Chrome release channel definitions.
 pub mod channel;
+
+/// Platform identification for different operating systems and architectures.
 pub mod platform;
+
+/// Version parsing and representation.
 pub mod version;
 
-/// A long list of working releases. None are assigned to any channel.
+/// API request for a list of working releases,  None are assigned to any channel.
 pub mod known_good_versions;
 
 /// The last working releases for each channel.
 pub mod last_known_good_versions;
 
+/// Represents a download link for a specific platform.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Download {
+    /// The target platform for this download.
     pub platform: Platform,
+
+    /// The download URL.
     pub url: String,
 }
 
+/// Trait for types that contain a version identifier.
 pub trait HasVersion {
+    /// Returns the version identifier.
     fn version(&self) -> Version;
 }
 

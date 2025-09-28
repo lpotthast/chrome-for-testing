@@ -5,16 +5,29 @@ use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
 
+/// Supported platforms for Chrome and ChromeDriver downloads.
+///
+/// This site <https://googlechromelabs.github.io/chrome-for-testing/> show the platform names
+/// defined here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum Platform {
+    /// Linux x64 platform.
     #[serde(rename = "linux64")]
     Linux64,
+
+    /// macOS ARM64 platform (Apple Silicon).
     #[serde(rename = "mac-arm64")]
     MacArm64,
+
+    /// macOS x64 platform (Intel).
     #[serde(rename = "mac-x64")]
     MacX64,
+
+    /// Windows 32-bit platform.
     #[serde(rename = "win32")]
     Win32,
+
+    /// Windows 64-bit platform.
     #[serde(rename = "win64")]
     Win64,
 }
@@ -79,6 +92,33 @@ impl Platform {
         match self {
             Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",
             Platform::Win32 | Platform::Win64 => "chromedriver.exe",
+        }
+    }
+
+    /// Tells whether this platform identifier references the Linux OS.
+    pub fn is_linux(&self) -> bool {
+        match self {
+            Platform::Linux64 => true,
+            Platform::MacArm64 | Platform::MacX64 => false,
+            Platform::Win32 | Platform::Win64 => false,
+        }
+    }
+
+    /// Tells whether this platform identifier references macOS.
+    pub fn is_macos(&self) -> bool {
+        match self {
+            Platform::Linux64 => false,
+            Platform::MacArm64 | Platform::MacX64 => true,
+            Platform::Win32 | Platform::Win64 => false,
+        }
+    }
+
+    /// Tells whether this platform identifier references the Windows OS.
+    pub fn is_windows(&self) -> bool {
+        match self {
+            Platform::Linux64 => false,
+            Platform::MacArm64 | Platform::MacX64 => false,
+            Platform::Win32 | Platform::Win64 => true,
         }
     }
 }

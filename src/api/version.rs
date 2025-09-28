@@ -6,9 +6,16 @@ use std::fmt::{Display, Formatter};
 /// A version identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Version {
+    /// The major version number.
     pub major: u32,
+
+    /// The minor version number.
     pub minor: u32,
+
+    /// The patch version number.
     pub patch: u32,
+
+    /// The build version number.
     pub build: u32,
 }
 
