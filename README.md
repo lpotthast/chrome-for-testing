@@ -1,8 +1,7 @@
 # chrome-for-testing
 
-Implementation of the **chrome-for-testing** JSON API.
-
-A Rust crate that provides programmatic access to Google's Chrome for Testing API, allowing you to fetch information
+Provides serde-enabled type definitions covering the **chrome-for-testing** JSON API responses,
+and programmatic access to the API endpoints through `reqwest`, allowing you to fetch information
 about available Chrome and ChromeDriver versions for automated testing.
 
 ## Links
