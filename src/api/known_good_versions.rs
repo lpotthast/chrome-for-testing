@@ -30,6 +30,10 @@ pub struct VersionWithoutChannel {
 }
 
 /// Response structure for the "known good versions" API endpoint.
+///
+/// Contains a comprehensive list of Chrome versions that have been tested and verified to work.
+/// Unlike the "last known good versions" API, this includes all historical versions without
+/// channel assignments.
 #[derive(Debug, Clone, Deserialize)]
 pub struct KnownGoodVersions {
     /// When this data was last updated.
@@ -40,54 +44,57 @@ pub struct KnownGoodVersions {
     pub versions: Vec<VersionWithoutChannel>,
 }
 
-/// Fetches the list of all known good Chrome versions from the Chrome for Testing API.
-///
-/// Returns a comprehensive list of Chrome versions that have been tested and verified to work.
-/// Unlike the "last known good versions" API, this includes all historical versions without
-/// channel assignments.
-pub async fn request(client: reqwest::Client) -> Result<KnownGoodVersions> {
-    /// JSON Example:
-    /// ```json
-    /// {
-    ///     "version": "115.0.5763.0",
-    ///     "revision": "1141961",
-    ///     "downloads": {
-    ///         "chrome": [
-    ///             {
-    ///                 "platform": "linux64",
-    ///                 "url": "https://.../chrome-linux64.zip"
-    ///             },
-    ///             ...
-    ///         ],
-    ///         "chromedriver": [ /* <- Some versions don't have this field! */
-    ///             {
-    ///                 "platform": "linux64",
-    ///                 "url": "https://.../chromedriver-linux64.zip"
-    ///             },
-    ///             ...
-    ///         ]
-    ///     }
-    /// },
-    /// ´´´
-    const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_URL: &str =
+impl KnownGoodVersions {
+    /// Fetches the list of all known good Chrome versions from the Chrome for Testing API.
+    ///
+    /// Returns a comprehensive list of Chrome versions that have been tested and verified to work.
+    /// Unlike the "last known good versions" API, this includes all historical versions without
+    /// channel assignments.
+    pub async fn fetch(client: reqwest::Client) -> Result<Self> {
+        /// JSON Example:
+        /// ```json
+        /// {
+        ///     "version": "115.0.5763.0",
+        ///     "revision": "1141961",
+        ///     "downloads": {
+        ///         "chrome": [
+        ///             {
+        ///                 "platform": "linux64",
+        ///                 "url": "https://.../chrome-linux64.zip"
+        ///             },
+        ///             ...
+        ///         ],
+        ///         "chromedriver": [ /* <- Some versions don't have this field! */
+        ///             {
+        ///                 "platform": "linux64",
+        ///                 "url": "https://.../chromedriver-linux64.zip"
+        ///             },
+        ///             ...
+        ///         ]
+        ///     }
+        /// },
+        /// ´´´
+        const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_URL: &str =
         "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json";
 
-    let result = client
-        .get(KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_URL)
-        .send()
-        .await?
-        .json::<KnownGoodVersions>()
-        .await?;
-    Ok(result)
+        let result = client
+            .get(KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_URL)
+            .send()
+            .await?
+            .json::<Self>()
+            .await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::api::known_good_versions::KnownGoodVersions;
     use assertr::prelude::*;
 
     #[tokio::test]
     async fn can_query_known_good_versions_api_endpoint_and_deserialize_response() {
-        let result = super::request(reqwest::Client::new()).await;
+        let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
         let data = assert_that(result).is_ok().unwrap_inner();
         dbg!(&data);
     }
