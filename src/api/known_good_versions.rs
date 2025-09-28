@@ -25,7 +25,7 @@ use serde::Deserialize;
 ///         ]
 ///     }
 /// },
-/// ´´´
+/// ```
 const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
     "/chrome-for-testing/known-good-versions-with-downloads.json";
 

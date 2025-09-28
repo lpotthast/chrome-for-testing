@@ -13,7 +13,7 @@ pub mod platform;
 /// Version parsing and representation.
 pub mod version;
 
-/// API request for a list of working releases,  None are assigned to any channel.
+/// API request for a list of working releases. None are assigned to any channel.
 pub mod known_good_versions;
 
 /// The last working releases for each channel.

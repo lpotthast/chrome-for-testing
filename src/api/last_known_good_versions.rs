@@ -73,7 +73,7 @@ use std::collections::HashMap;
 ///         "Canary": { ... }
 ///     }
 /// }
-/// ´´´
+/// ```
 const LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
     "/chrome-for-testing/last-known-good-versions-with-downloads.json";
 
