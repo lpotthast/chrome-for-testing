@@ -30,14 +30,21 @@
 //! ```rust
 //! #[tokio::main]
 //! async fn main() {
+//!     use chrome_for_testing::api::known_good_versions::KnownGoodVersions;
+//!
 //!     let client = reqwest::Client::new();
-//!     match chrome_for_testing::api::known_good_versions::request(client).await {
+//!     match KnownGoodVersions::fetch(client).await {
 //!         Ok(data) => println!("Successfully fetched Chrome versions: {:?}", data),
 //!         Err(e) => println!("Error occurred: {}", e),
 //!     }
 //! }
 //! ```
 
+/// Chrome for Testing API types and functions for fetching version information.
 pub mod api;
+
+/// ChromeDriver specific utilities, such as log level configuration.
 pub mod chromedriver;
+
+/// Error types used throughout the crate.
 pub mod error;

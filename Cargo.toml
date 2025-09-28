@@ -1,6 +1,6 @@
 [package]
 name = "chrome-for-testing"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.80.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
@@ -14,14 +14,15 @@ readme = "README.md"
 authors = ["Lukas Potthast <privat@lukas-potthast.de>"]
 
 [dependencies]
-reqwest = { version = "0.12.12", features = ["json"] }
-serde = { version = "1.0.217", features = ["derive"] }
+reqwest = { version = "0.12.23", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.135"
-thiserror = "2.0.11"
-time = { version = "0.3.37", features = ["serde", "parsing", "macros"] }
+thiserror = "2.0.16"
+time = { version = "0.3.41", features = ["serde", "parsing", "macros"] }
 url = "2.5.4"
 
 [dev-dependencies]
-assertr = "0.1.0"
+assertr = "0.3.9"
 mockito = "1.6.1"
-tokio = { version = "1.43.0", features = ["full"] }
+serde_json = "1.0.145"
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }

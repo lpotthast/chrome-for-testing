@@ -1,51 +1,103 @@
 use crate::api::version::Version;
 use crate::api::{Download, API_BASE_URL};
-use crate::error::Error;
+use crate::error::Result;
 use serde::Deserialize;
 
+/// JSON Example:
+/// ```json
+/// {
+///     "version": "115.0.5763.0",
+///     "revision": "1141961",
+///     "downloads": {
+///         "chrome": [
+///             {
+///                 "platform": "linux64",
+///                 "url": "https://.../chrome-linux64.zip"
+///             },
+///             ...
+///         ],
+///         "chromedriver": [ /* <- Some versions don't have this field! */
+///             {
+///                 "platform": "linux64",
+///                 "url": "https://.../chromedriver-linux64.zip"
+///             },
+///             ...
+///         ]
+///     }
+/// },
+/// ```
 const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
     "/chrome-for-testing/known-good-versions-with-downloads.json";
 
+/// Download links for Chrome and ChromeDriver binaries.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Downloads {
+    /// Download links for Chrome binaries for various platforms.
     pub chrome: Vec<Download>,
+
+    /// Download links for ChromeDriver binaries for various platforms.
+    /// Note: Some older Chrome versions may not have ChromeDriver downloads available!
     pub chromedriver: Option<Vec<Download>>,
 }
 
+/// An entry of the "known good versions" API response, representing one version.
+///
+/// No `Channel` information is provided.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct VersionWithoutChannel {
+    /// The version identifier.
     pub version: Version,
+
+    /// The Chrome revision number.
     pub revision: String,
+
+    /// Available downloads for this version.
     pub downloads: Downloads,
 }
 
+/// Response structure for the "known good versions" API endpoint.
+///
+/// Contains a comprehensive list of Chrome versions that have been tested and verified to work.
+/// Unlike the "last known good versions" API, this includes all historical versions without
+/// channel assignments.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct KnownGoodVersions {
+    /// When this data was last updated.
     #[serde(with = "time::serde::rfc3339")]
     pub timestamp: time::OffsetDateTime,
+
+    /// List of all known good Chrome versions.
     pub versions: Vec<VersionWithoutChannel>,
 }
 
-pub async fn request(client: reqwest::Client) -> Result<KnownGoodVersions, Error> {
-    request_with_base_url(client, API_BASE_URL.clone()).await
-}
+impl KnownGoodVersions {
+    /// Fetches the list of all known good Chrome versions from the Chrome for Testing API.
+    ///
+    /// Returns a comprehensive list of Chrome versions that have been tested and verified to work.
+    /// Unlike the "last known good versions" API, this includes all historical versions without
+    /// channel assignments.
+    pub async fn fetch(client: reqwest::Client) -> Result<Self> {
+        Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
+    }
 
-pub async fn request_with_base_url(
-    client: reqwest::Client,
-    base_url: reqwest::Url,
-) -> Result<KnownGoodVersions, Error> {
-    let result = client
-        .get(base_url.join(KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
-        .send()
-        .await?
-        .json::<KnownGoodVersions>()
-        .await?;
-    Ok(result)
+    pub async fn fetch_with_base_url(
+        client: reqwest::Client,
+        base_url: reqwest::Url,
+    ) -> Result<Self> {
+        let result = client
+            .get(base_url.join(KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
+            .send()
+            .await?
+            .json::<Self>()
+            .await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::known_good_versions::KnownGoodVersions;
     use crate::api::platform::Platform;
     use crate::api::version::Version;
     use crate::api::Download;
@@ -55,7 +107,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_request_from_real_world_endpoint() {
-        let result = request(reqwest::Client::new()).await;
+        let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
         assert_that(result).is_ok();
     }
 
@@ -75,7 +127,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = request_with_base_url(reqwest::Client::new(), url)
+        let data = KnownGoodVersions::fetch_with_base_url(reqwest::Client::new(), url)
             .await
             .unwrap();
 

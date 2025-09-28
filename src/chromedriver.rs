@@ -12,12 +12,23 @@ use std::fmt::{Display, Formatter};
 /// ```
 #[derive(Default, Debug, PartialEq, Eq)]
 pub enum LogLevel {
+    /// Log all messages (most verbose).
     All,
+
+    /// Log debug messages and above.
     Debug,
+
+    /// Log info messages and above (default level).
     #[default]
     Info,
+
+    /// Log warning messages and above.
     Warning,
+
+    /// Log only severe/error messages.
     Severe,
+
+    /// Disable all logging.
     Off,
 }
 

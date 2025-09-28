@@ -1,17 +1,29 @@
 use serde::Deserialize;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
+/// Chrome release channel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub enum Channel {
+    /// The stable release channel - the default Chrome version for general users.
     Stable,
+
+    /// The beta release channel - preview of upcoming stable features.
+    /// Less stable than stable, used for testing new functionality before it reaches stable.
     Beta,
+
+    /// The dev release channel - early development builds with cutting-edge features.
+    /// Less stable than beta, intended for developers and early adopters.
     Dev,
+
+    /// The canary release channel - nightly builds with the absolute latest changes.
+    /// Less stable than dev, highly experimental.
     Canary,
 }
 
 impl Display for Channel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        // Use the Debug implementation.
+        write!(f, "{self:?}")
     }
 }
 

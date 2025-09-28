@@ -1,17 +1,33 @@
+use crate::error::Error;
+use crate::error::Result;
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
 
+/// Supported platforms for Chrome and ChromeDriver downloads.
+///
+/// This site <https://googlechromelabs.github.io/chrome-for-testing/> show the platform names
+/// defined here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum Platform {
+    /// Linux x64 platform.
     #[serde(rename = "linux64")]
     Linux64,
+
+    /// macOS ARM64 platform (Apple Silicon).
     #[serde(rename = "mac-arm64")]
     MacArm64,
+
+    /// macOS x64 platform (Intel).
     #[serde(rename = "mac-x64")]
     MacX64,
+
+    /// Windows 32-bit platform.
     #[serde(rename = "win32")]
     Win32,
+
+    /// Windows 64-bit platform.
     #[serde(rename = "win64")]
     Win64,
 }
@@ -30,26 +46,39 @@ impl Display for Platform {
 
 impl Platform {
     /// Detect the platform identifier that should be used for the current system.
-    pub fn detect() -> Platform {
+    pub fn detect() -> Result<Platform> {
         match consts::OS {
-            "windows" => match consts::ARCH {
-                "x86" => Platform::Win32,
-                "x86_64" => Platform::Win64,
-                _ => panic!("Unsupported architecture"),
+            os @ "windows" => match consts::ARCH {
+                "x86" => Ok(Platform::Win32),
+                "x86_64" => Ok(Platform::Win64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            "linux" => match consts::ARCH {
-                "x86_64" => Platform::Linux64,
-                _ => panic!("Unsupported architecture"),
+            os @ "linux" => match consts::ARCH {
+                "x86_64" => Ok(Platform::Linux64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            "macos" => match consts::ARCH {
-                "x86_64" => Platform::MacX64,
-                "arm" | "aarch64" => Platform::MacArm64,
-                _ => panic!("Unsupported architecture"),
+            os @ "macos" => match consts::ARCH {
+                "x86_64" => Ok(Platform::MacX64),
+                "arm" | "aarch64" => Ok(Platform::MacArm64),
+                arch => Err(Error::UnsupportedPlatform {
+                    os: Cow::Borrowed(os),
+                    arch: Cow::Borrowed(arch),
+                }),
             },
-            _ => panic!("Unsupported OS"),
+            os => Err(Error::UnsupportedPlatform {
+                os: Cow::Borrowed(os),
+                arch: Cow::Borrowed(consts::ARCH),
+            }),
         }
     }
 
+    /// Filename of the chrome binary.
     pub fn chrome_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 => "chrome",
@@ -58,10 +87,38 @@ impl Platform {
         }
     }
 
+    /// Filename of the chromedriver binary.
     pub fn chromedriver_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",
             Platform::Win32 | Platform::Win64 => "chromedriver.exe",
+        }
+    }
+
+    /// Tells whether this platform identifier references the Linux OS.
+    pub fn is_linux(&self) -> bool {
+        match self {
+            Platform::Linux64 => true,
+            Platform::MacArm64 | Platform::MacX64 => false,
+            Platform::Win32 | Platform::Win64 => false,
+        }
+    }
+
+    /// Tells whether this platform identifier references macOS.
+    pub fn is_macos(&self) -> bool {
+        match self {
+            Platform::Linux64 => false,
+            Platform::MacArm64 | Platform::MacX64 => true,
+            Platform::Win32 | Platform::Win64 => false,
+        }
+    }
+
+    /// Tells whether this platform identifier references the Windows OS.
+    pub fn is_windows(&self) -> bool {
+        match self {
+            Platform::Linux64 => false,
+            Platform::MacArm64 | Platform::MacX64 => false,
+            Platform::Win32 | Platform::Win64 => true,
         }
     }
 }
