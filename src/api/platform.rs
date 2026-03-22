@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
 
-/// Supported platforms for Chrome and ChromeDriver downloads.
+/// Supported platforms for Chrome and `ChromeDriver` downloads.
 ///
 /// This site <https://googlechromelabs.github.io/chrome-for-testing/> show the platform names
 /// defined here.
@@ -46,6 +46,10 @@ impl Display for Platform {
 
 impl Platform {
     /// Detect the platform identifier that should be used for the current system.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the current OS/architecture combination is not supported.
     pub fn detect() -> Result<Platform> {
         match consts::OS {
             os @ "windows" => match consts::ARCH {
@@ -79,6 +83,7 @@ impl Platform {
     }
 
     /// Filename of the chrome binary.
+    #[must_use]
     pub fn chrome_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 => "chrome",
@@ -88,6 +93,7 @@ impl Platform {
     }
 
     /// Filename of the chromedriver binary.
+    #[must_use]
     pub fn chromedriver_binary_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",
@@ -96,29 +102,29 @@ impl Platform {
     }
 
     /// Tells whether this platform identifier references the Linux OS.
+    #[must_use]
     pub fn is_linux(&self) -> bool {
         match self {
             Platform::Linux64 => true,
-            Platform::MacArm64 | Platform::MacX64 => false,
-            Platform::Win32 | Platform::Win64 => false,
+            Platform::MacArm64 | Platform::MacX64 | Platform::Win32 | Platform::Win64 => false,
         }
     }
 
     /// Tells whether this platform identifier references macOS.
+    #[must_use]
     pub fn is_macos(&self) -> bool {
         match self {
-            Platform::Linux64 => false,
             Platform::MacArm64 | Platform::MacX64 => true,
-            Platform::Win32 | Platform::Win64 => false,
+            Platform::Linux64 | Platform::Win32 | Platform::Win64 => false,
         }
     }
 
     /// Tells whether this platform identifier references the Windows OS.
+    #[must_use]
     pub fn is_windows(&self) -> bool {
         match self {
-            Platform::Linux64 => false,
-            Platform::MacArm64 | Platform::MacX64 => false,
             Platform::Win32 | Platform::Win64 => true,
+            Platform::Linux64 | Platform::MacArm64 | Platform::MacX64 => false,
         }
     }
 }

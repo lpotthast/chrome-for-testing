@@ -80,8 +80,6 @@ impl<'de> Deserialize<'de> for Version {
             where
                 E: de::Error,
             {
-                let mut parts = value.split('.');
-
                 fn parse_part<'i, E: de::Error>(
                     parts: &mut impl Iterator<Item = &'i str>,
                     named: &'static str,
@@ -97,6 +95,7 @@ impl<'de> Deserialize<'de> for Version {
                         })
                 }
 
+                let mut parts = value.split('.');
                 let major = parse_part(&mut parts, "major")?;
                 let minor = parse_part(&mut parts, "minor")?;
                 let patch = parse_part(&mut parts, "patch")?;
@@ -174,7 +173,7 @@ mod tests {
             "#
             );
             let result = serde_json::from_str::<Version>(&json);
-            assert_that(result).is_ok().is_equal_to(expected);
+            assert_that!(result).is_ok().is_equal_to(expected);
         }
     }
 
@@ -211,7 +210,7 @@ mod tests {
             "#
             );
             let result = serde_json::from_str::<Version>(&json);
-            assert_that(result)
+            assert_that!(result)
                 .is_err()
                 .derive(|it| it.to_string())
                 .contains(expected_error_substring);
@@ -226,7 +225,7 @@ mod tests {
             patch: 5763,
             build: 42,
         };
-        assert_that(version).has_display_value("115.785.5763.42");
+        assert_that!(version).has_display_value("115.785.5763.42");
     }
 
     #[test]
@@ -237,7 +236,7 @@ mod tests {
             patch: 5763,
             build: 42,
         };
-        assert_that(version)
+        assert_that!(version)
             .has_debug_value("Version { major: 115, minor: 785, patch: 5763, build: 42 }");
     }
 
@@ -274,46 +273,46 @@ mod tests {
             build: 0,
         };
 
-        assert_that(v1).is_less_than(v2);
-        assert_that(v1).is_less_than(v3);
-        assert_that(v1).is_less_than(v4);
-        assert_that(v1).is_less_than(v5);
-        assert_that(v2).is_less_than(v3);
-        assert_that(v2).is_less_than(v4);
-        assert_that(v2).is_less_than(v5);
-        assert_that(v3).is_less_than(v4);
-        assert_that(v3).is_less_than(v5);
-        assert_that(v4).is_less_than(v5);
+        assert_that!(v1).is_less_than(v2);
+        assert_that!(v1).is_less_than(v3);
+        assert_that!(v1).is_less_than(v4);
+        assert_that!(v1).is_less_than(v5);
+        assert_that!(v2).is_less_than(v3);
+        assert_that!(v2).is_less_than(v4);
+        assert_that!(v2).is_less_than(v5);
+        assert_that!(v3).is_less_than(v4);
+        assert_that!(v3).is_less_than(v5);
+        assert_that!(v4).is_less_than(v5);
 
-        assert_that(v2).is_greater_than(v1);
-        assert_that(v3).is_greater_than(v1);
-        assert_that(v4).is_greater_than(v1);
-        assert_that(v5).is_greater_than(v1);
-        assert_that(v3).is_greater_than(v2);
-        assert_that(v4).is_greater_than(v2);
-        assert_that(v5).is_greater_than(v2);
-        assert_that(v4).is_greater_than(v3);
-        assert_that(v5).is_greater_than(v3);
-        assert_that(v5).is_greater_than(v4);
+        assert_that!(v2).is_greater_than(v1);
+        assert_that!(v3).is_greater_than(v1);
+        assert_that!(v4).is_greater_than(v1);
+        assert_that!(v5).is_greater_than(v1);
+        assert_that!(v3).is_greater_than(v2);
+        assert_that!(v4).is_greater_than(v2);
+        assert_that!(v5).is_greater_than(v2);
+        assert_that!(v4).is_greater_than(v3);
+        assert_that!(v5).is_greater_than(v3);
+        assert_that!(v5).is_greater_than(v4);
 
-        assert_that(v1).is_equal_to(v1);
-        assert_that(v1).is_less_or_equal_to(v1);
-        assert_that(v1).is_greater_or_equal_to(v1);
+        assert_that!(v1).is_equal_to(v1);
+        assert_that!(v1).is_less_or_equal_to(v1);
+        assert_that!(v1).is_greater_or_equal_to(v1);
 
-        assert_that(v2).is_equal_to(v2);
-        assert_that(v2).is_less_or_equal_to(v2);
-        assert_that(v2).is_greater_or_equal_to(v2);
+        assert_that!(v2).is_equal_to(v2);
+        assert_that!(v2).is_less_or_equal_to(v2);
+        assert_that!(v2).is_greater_or_equal_to(v2);
 
-        assert_that(v3).is_equal_to(v3);
-        assert_that(v3).is_less_or_equal_to(v3);
-        assert_that(v3).is_greater_or_equal_to(v3);
+        assert_that!(v3).is_equal_to(v3);
+        assert_that!(v3).is_less_or_equal_to(v3);
+        assert_that!(v3).is_greater_or_equal_to(v3);
 
-        assert_that(v4).is_equal_to(v4);
-        assert_that(v4).is_less_or_equal_to(v4);
-        assert_that(v4).is_greater_or_equal_to(v4);
+        assert_that!(v4).is_equal_to(v4);
+        assert_that!(v4).is_less_or_equal_to(v4);
+        assert_that!(v4).is_greater_or_equal_to(v4);
 
-        assert_that(v5).is_equal_to(v5);
-        assert_that(v5).is_less_or_equal_to(v5);
-        assert_that(v5).is_greater_or_equal_to(v5);
+        assert_that!(v5).is_equal_to(v5);
+        assert_that!(v5).is_less_or_equal_to(v5);
+        assert_that!(v5).is_greater_or_equal_to(v5);
     }
 }

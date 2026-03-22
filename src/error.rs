@@ -17,7 +17,7 @@ pub enum Error {
         /// The operating system name, e.g. "linux".
         os: Cow<'static, str>,
 
-        /// The system architecture name, e.g. "x86_64".
+        /// The system architecture name, e.g. "`x86_64`".
         arch: Cow<'static, str>,
     },
 }
