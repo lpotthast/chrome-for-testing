@@ -29,14 +29,14 @@ use serde::Deserialize;
 const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
     "/chrome-for-testing/known-good-versions-with-downloads.json";
 
-/// Download links for Chrome and ChromeDriver binaries.
+/// Download links for Chrome and `ChromeDriver` binaries.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Downloads {
     /// Download links for Chrome binaries for various platforms.
     pub chrome: Vec<Download>,
 
-    /// Download links for ChromeDriver binaries for various platforms.
-    /// Note: Some older Chrome versions may not have ChromeDriver downloads available!
+    /// Download links for `ChromeDriver` binaries for various platforms.
+    /// Note: Some older Chrome versions may not have `ChromeDriver` downloads available!
     pub chromedriver: Option<Vec<Download>>,
 }
 
@@ -76,10 +76,19 @@ impl KnownGoodVersions {
     /// Returns a comprehensive list of Chrome versions that have been tested and verified to work.
     /// Unlike the "last known good versions" API, this includes all historical versions without
     /// channel assignments.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP request or deserialization fails.
     pub async fn fetch(client: reqwest::Client) -> Result<Self> {
         Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
     }
 
+    /// Fetches from a custom base URL (useful for testing).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP request or deserialization fails.
     pub async fn fetch_with_base_url(
         client: reqwest::Client,
         base_url: reqwest::Url,
@@ -108,7 +117,7 @@ mod tests {
     #[tokio::test]
     async fn can_request_from_real_world_endpoint() {
         let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
-        assert_that(result).is_ok();
+        assert_that!(result).is_ok();
     }
 
     //noinspection DuplicatedCode
@@ -131,7 +140,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_that(data).is_equal_to(KnownGoodVersions {
+        assert_that!(data).is_equal_to(KnownGoodVersions {
             timestamp: datetime!(2025-01-17 10:09:31.689 UTC),
             versions: vec![
                 VersionWithoutChannel {

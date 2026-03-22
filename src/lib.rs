@@ -2,7 +2,7 @@
 //!
 //! This crate provides programmatic access to "chrome-for-testing" JSON APIs,
 //! which are used to retrieve version details and other relevant information about
-//! Chrome and ChromeDriver for testing purposes.
+//! Chrome and `ChromeDriver` for testing purposes.
 //!
 //! ## Modules Overview
 //!
@@ -43,7 +43,7 @@
 /// Chrome for Testing API types and functions for fetching version information.
 pub mod api;
 
-/// ChromeDriver specific utilities, such as log level configuration.
+/// `ChromeDriver` specific utilities, such as log level configuration.
 pub mod chromedriver;
 
 /// Error types used throughout the crate.
