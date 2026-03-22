@@ -25,7 +25,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chrome-for-testing = "0.2.0"
+chrome-for-testing = "0.2"
 ```
 
 Or use `cargo add`:
