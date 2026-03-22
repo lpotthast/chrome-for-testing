@@ -1,6 +1,6 @@
 use crate::api::channel::Channel;
 use crate::api::version::Version;
-use crate::api::{Download, API_BASE_URL};
+use crate::api::{API_BASE_URL, Download};
 use crate::error::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -148,14 +148,14 @@ impl LastKnownGoodVersions {
 
 #[cfg(test)]
 mod tests {
+    use crate::api::Download;
     use crate::api::channel::Channel;
     use crate::api::last_known_good_versions::{
-        Downloads, LastKnownGoodVersions, VersionInChannel,
-        LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH,
+        Downloads, LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH, LastKnownGoodVersions,
+        VersionInChannel,
     };
     use crate::api::platform::Platform;
     use crate::api::version::Version;
-    use crate::api::Download;
     use assertr::prelude::*;
     use std::collections::HashMap;
     use time::macros::datetime;

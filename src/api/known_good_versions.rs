@@ -1,5 +1,5 @@
 use crate::api::version::Version;
-use crate::api::{Download, API_BASE_URL};
+use crate::api::{API_BASE_URL, Download};
 use crate::error::Result;
 use serde::Deserialize;
 
@@ -97,10 +97,10 @@ impl KnownGoodVersions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::Download;
     use crate::api::known_good_versions::KnownGoodVersions;
     use crate::api::platform::Platform;
     use crate::api::version::Version;
-    use crate::api::Download;
     use assertr::prelude::*;
     use time::macros::datetime;
     use url::Url;

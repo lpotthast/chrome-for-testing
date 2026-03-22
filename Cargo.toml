@@ -1,8 +1,8 @@
 [package]
 name = "chrome-for-testing"
-version = "0.2.1"
-edition = "2021"
-rust-version = "1.80.0"
+version = "0.2.2"
+edition = "2024"
+rust-version = "1.85.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
 description = """
 Interact with the chrome-for-testing JSON API.
