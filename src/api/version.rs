@@ -103,7 +103,9 @@ impl<'de> Deserialize<'de> for Version {
                 let build = parse_part(&mut parts, "build")?;
 
                 if let Some(next) = parts.next() {
-                    return Err(de::Error::custom(format!("Invalid version string format. Did not expect any additional parts. Got at least the additional part: {next}")));
+                    return Err(de::Error::custom(format!(
+                        "Invalid version string format. Did not expect any additional parts. Got at least the additional part: {next}"
+                    )));
                 }
 
                 Ok(Version {
