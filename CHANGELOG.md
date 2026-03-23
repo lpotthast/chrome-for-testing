@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-23
+
 ### Added
 
 - `Serialize` impl for all API types (`Download`, `Version`, `Channel`, `Platform`, `LogLevel`, `KnownGoodVersions`,
@@ -92,7 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `HasVersion` trait providing a common interface for version types.
 - ChromeDriver log level configuration.
 
-[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.3.0...HEAD
+
+[0.3.0]: https://github.com/lpotthast/chrome-for-testing/compare/v0.2.3...v0.3.0
 
 [0.2.3]: https://github.com/lpotthast/chrome-for-testing/compare/v0.2.2...v0.2.3
 
