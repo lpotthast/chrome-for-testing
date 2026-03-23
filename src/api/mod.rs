@@ -1,7 +1,7 @@
 use crate::api::version::Version;
 use platform::Platform;
 use reqwest::Url;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 /// Chrome release channel definitions.
@@ -27,13 +27,25 @@ pub static API_BASE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://googlechromelabs.github.io").expect("Valid URL"));
 
 /// Represents a download link for a specific platform.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Download {
     /// The target platform for this download.
     pub platform: Platform,
 
     /// The download URL.
     pub url: String,
+}
+
+/// Extension trait for download slices, providing platform-based lookup.
+pub trait DownloadsByPlatform {
+    /// Returns the download entry for the given platform, if available.
+    fn for_platform(&self, platform: Platform) -> Option<&Download>;
+}
+
+impl DownloadsByPlatform for [Download] {
+    fn for_platform(&self, platform: Platform) -> Option<&Download> {
+        self.iter().find(|d| d.platform == platform)
+    }
 }
 
 /// Trait for types that contain a version identifier.

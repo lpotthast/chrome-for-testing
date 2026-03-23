@@ -2,18 +2,23 @@
 //!
 //! This crate provides programmatic access to "chrome-for-testing" JSON APIs,
 //! which are used to retrieve version details and other relevant information about
-//! Chrome and `ChromeDriver` for testing purposes.
+//! `Chrome` and `ChromeDriver` for testing purposes.
 //!
 //! ## Modules Overview
 //!
-//! - [`api`]: Contains the core functionality to interact with the API endpoints.
-//! - [`chromedriver`]: Facilitates interaction with ChromeDriver-specific data and operations.
+//! - [`chromedriver`]: `ChromeDriver` specific utilities, such as log level configuration.
 //!
 //! ## API Endpoints
 //!
 //! The crate leverages the following JSON API endpoints:
-//! - **Known Good Versions**: Provides a list of known good versions of Chrome.
-//! - **Last Known Good Versions**: Retrieves the last known good version of Chrome.
+//!
+//! - **Last Known Good Versions**:
+//!   Recent good versions for each release channel (Stable/Beta/Dev/Canary). Perfect if you just
+//!   need the "latest stable" version for example.
+//!
+//! - **Known Good Versions**:
+//!   All known good versions. Longer API response, not pre-grouped per release channel. Good fit
+//!   if you have a hardcoded old version that you want to resolve a download URL for.
 //!
 //! For detailed documentation on these APIs, see the
 //! [official Chrome for Testing documentation](https://github.com/GoogleChromeLabs/chrome-for-testing#json-api-endpoints).
@@ -23,28 +28,42 @@
 //! - **Ease of Use**: Simplifies interaction with Chrome's testing-related APIs.
 //! - **Type-Safe Deserialization**: Automatically maps JSON responses to Rust structs for
 //!   seamless API interaction.
-//! - **Asynchronous Support**: Fully asynchronous using the `tokio` runtime.
+//! - **Asynchronous Support**: Fully asynchronous.
 //!
 //! ## Example Usage
 //!
-//! ```rust
+//! ```rust,no_run
 //! #[tokio::main]
 //! async fn main() {
-//!     use chrome_for_testing::api::known_good_versions::KnownGoodVersions;
+//!     use chrome_for_testing::KnownGoodVersions;
 //!
 //!     let client = reqwest::Client::new();
-//!     match KnownGoodVersions::fetch(client).await {
-//!         Ok(data) => println!("Successfully fetched Chrome versions: {:?}", data),
-//!         Err(e) => println!("Error occurred: {}", e),
+//!     match KnownGoodVersions::fetch(&client).await {
+//!         Ok(data) => println!("Successfully fetched Chrome versions: {data:?}"),
+//!         Err(e) => println!("Error occurred: {e:?}"),
 //!     }
 //! }
 //! ```
 
-/// Chrome for Testing API types and functions for fetching version information.
-pub mod api;
-
 /// `ChromeDriver` specific utilities, such as log level configuration.
 pub mod chromedriver;
 
-/// Error types used throughout the crate.
-pub mod error;
+pub(crate) mod api;
+pub(crate) mod error;
+
+pub use api::Download;
+pub use api::DownloadsByPlatform;
+pub use api::HasVersion;
+pub use api::channel::Channel;
+pub use api::channel::ParseChannelError;
+pub use api::known_good_versions::Downloads as KnownGoodDownloads;
+pub use api::known_good_versions::KnownGoodVersions;
+pub use api::known_good_versions::VersionWithoutChannel;
+pub use api::last_known_good_versions::Downloads as LastKnownGoodDownloads;
+pub use api::last_known_good_versions::LastKnownGoodVersions;
+pub use api::last_known_good_versions::VersionInChannel;
+pub use api::platform::ParsePlatformError;
+pub use api::platform::Platform;
+pub use api::version::ParseVersionError;
+pub use api::version::Version;
+pub use error::Error;

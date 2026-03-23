@@ -30,3 +30,4 @@ tidy:
     cargo check --all
     cargo clippy --all -- -W clippy::pedantic
     cargo test --all
+    cargo doc --no-deps

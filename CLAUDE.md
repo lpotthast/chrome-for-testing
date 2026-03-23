@@ -13,38 +13,33 @@ cargo build                          # Build
 cargo test --all                     # Run all tests (unit + integration)
 cargo test <test_name>               # Run a single test by name
 cargo clippy --all -- -W clippy::pedantic  # Lint (pedantic)
-just tidy                            # Full pipeline: update deps, sort, fmt, check, clippy, test
+cargo doc --no-deps                  # Build docs
+just tidy                            # Full pipeline: update deps, sort, fmt, check, clippy, test, doc
 just install-tools                   # One-time: install nightly + cargo-hack, cargo-minimal-versions, cargo-msrv
 just minimal-versions                # Verify minimum dependency version bounds
 ```
 
-Integration tests (`tests/integration.rs`) hit the real Chrome for Testing API. Unit tests in API modules use `mockito` with fixtures from `test-data/`.
+Integration tests (`tests/integration.rs`) hit the real Chrome for Testing API. Unit tests in API modules use `mockito` with fixtures from `test-data/` (loaded via `include_str!`).
 
 ## Architecture
 
-```
-src/
-├── lib.rs              # Crate root, re-exports api, chromedriver, error modules
-├── error.rs            # Error enum (UrlParsing, Request, UnsupportedPlatform) via thiserror
-├── chromedriver.rs     # ChromeDriver utilities (LogLevel enum)
-└── api/
-    ├── mod.rs          # Shared types: Download, HasVersion trait, API_BASE_URL (LazyLock)
-    ├── channel.rs      # Channel enum (Stable, Beta, Dev, Canary)
-    ├── platform.rs     # Platform enum with detect(), binary name methods, OS checks
-    ├── version.rs      # Version struct with custom serde Visitor (major.minor.patch.build)
-    ├── known_good_versions.rs      # KnownGoodVersions::fetch() endpoint
-    └── last_known_good_versions.rs # LastKnownGoodVersions::fetch() endpoint
-```
+All public types are re-exported from `lib.rs` — users import from the crate root (e.g., `chrome_for_testing::KnownGoodVersions`).
 
 Key patterns:
-- API endpoint structs expose `fetch(client)` and `fetch_with_base_url(client, url)` methods (the latter enables mockito testing).
-- `HasVersion` trait provides a common interface for version types (`VersionWithoutChannel`, `VersionInChannel`).
-- `Version` has a custom `Deserialize` impl (visitor-based) parsing `"major.minor.patch.build"` strings, with full `PartialOrd` support.
-- Platform serde renames match the Chrome for Testing API field names (e.g., `linux64`, `mac-arm64`).
+- API endpoint structs (`KnownGoodVersions`, `LastKnownGoodVersions`) expose `fetch(client)` and `fetch_with_base_url(client, url)` methods. The latter enables mockito testing against a local server.
+- `HasVersion` trait provides a common interface for the two version types (`VersionWithoutChannel` from known_good_versions, `VersionInChannel` from last_known_good_versions).
+- `Version` uses a 4-part format (`major.minor.patch.build`) matching Chrome's versioning scheme — not semver. It has a custom serde `Visitor` for parsing, `FromStr` for `"131.0.6778.204".parse()`, and full `Ord` support.
+- `Platform` serde renames match the Chrome for Testing API field names (e.g., `linux64`, `mac-arm64`).
+- There are **two distinct `Downloads` structs** — a common gotcha:
+  - `known_good_versions::Downloads`: has `chrome: Vec<Download>` and `chromedriver: Option<Vec<Download>>` (older versions lack ChromeDriver)
+  - `last_known_good_versions::Downloads`: has `chrome`, `chromedriver`, and `chrome_headless_shell` (all non-optional `Vec<Download>`)
+- `LastKnownGoodVersions` stores channels in a `HashMap<Channel, VersionInChannel>` with convenience accessors (`stable()`, `beta()`, `dev()`, `canary()`).
+- Timestamps use `time::OffsetDateTime` with `#[serde(with = "time::serde::rfc3339")]`.
 
 ## Conventions
 
-- MSRV: 1.80.0
+- Edition: 2024
+- MSRV: 1.85.1
 - License: MIT OR Apache-2.0
 - Clippy pedantic warnings are enforced
 - Test assertions use the `assertr` crate
