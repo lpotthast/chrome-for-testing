@@ -1,7 +1,7 @@
 use crate::api::version::Version;
 use crate::api::{API_BASE_URL, Download};
 use crate::error::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// JSON Example:
 /// ```json
@@ -30,7 +30,7 @@ const KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
     "/chrome-for-testing/known-good-versions-with-downloads.json";
 
 /// Download links for Chrome and `ChromeDriver` binaries.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Downloads {
     /// Download links for Chrome binaries for various platforms.
     pub chrome: Vec<Download>,
@@ -43,7 +43,7 @@ pub struct Downloads {
 /// An entry of the "known good versions" API response, representing one version.
 ///
 /// No `Channel` information is provided.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VersionWithoutChannel {
     /// The version identifier.
     pub version: Version,
@@ -60,7 +60,7 @@ pub struct VersionWithoutChannel {
 /// Contains a comprehensive list of Chrome versions that have been tested and verified to work.
 /// Unlike the "last known good versions" API, this includes all historical versions without
 /// channel assignments.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KnownGoodVersions {
     /// When this data was last updated.
     #[serde(with = "time::serde::rfc3339")]
@@ -80,8 +80,8 @@ impl KnownGoodVersions {
     /// # Errors
     ///
     /// Returns an error if the HTTP request or deserialization fails.
-    pub async fn fetch(client: reqwest::Client) -> Result<Self> {
-        Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
+    pub async fn fetch(client: &reqwest::Client) -> Result<Self> {
+        Self::fetch_with_base_url(client, &API_BASE_URL).await
     }
 
     /// Fetches from a custom base URL (useful for testing).
@@ -90,8 +90,8 @@ impl KnownGoodVersions {
     ///
     /// Returns an error if the HTTP request or deserialization fails.
     pub async fn fetch_with_base_url(
-        client: reqwest::Client,
-        base_url: reqwest::Url,
+        client: &reqwest::Client,
+        base_url: &reqwest::Url,
     ) -> Result<Self> {
         let result = client
             .get(base_url.join(KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
@@ -116,7 +116,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_request_from_real_world_endpoint() {
-        let result = KnownGoodVersions::fetch(reqwest::Client::new()).await;
+        let result = KnownGoodVersions::fetch(&reqwest::Client::new()).await;
         assert_that!(result).is_ok();
     }
 
@@ -136,7 +136,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = KnownGoodVersions::fetch_with_base_url(reqwest::Client::new(), url)
+        let data = KnownGoodVersions::fetch_with_base_url(&reqwest::Client::new(), &url)
             .await
             .unwrap();
 

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 /// The chromedriver binary can be passed one of these log-levels.
@@ -10,7 +11,7 @@ use std::fmt::{Display, Formatter};
 /// let loglevel = chrome_for_testing::chromedriver::LogLevel::All;
 /// command.arg(format!("--log-level={loglevel}"));
 /// ```
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LogLevel {
     /// Log all messages (most verbose).
     All,

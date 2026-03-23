@@ -1,16 +1,14 @@
-use chrome_for_testing::api::channel::Channel;
-use chrome_for_testing::api::known_good_versions::KnownGoodVersions;
-use chrome_for_testing::api::last_known_good_versions::LastKnownGoodVersions;
-use chrome_for_testing::api::platform::Platform;
-use chrome_for_testing::error::Error;
+use chrome_for_testing::{
+    DownloadsByPlatform, Error, KnownGoodVersions, LastKnownGoodVersions, Platform, Version,
+};
 
 #[tokio::test]
 async fn test_last_known_good_versions() -> Result<(), Error> {
     let client = reqwest::Client::new();
-    let versions = LastKnownGoodVersions::fetch(client).await?;
+    let versions = LastKnownGoodVersions::fetch(&client).await?;
 
     // Get the stable channel version.
-    if let Some(stable) = versions.channels.get(&Channel::Stable) {
+    if let Some(stable) = versions.stable() {
         println!("Latest stable version: {}", stable.version);
 
         // Print download URLs for all platforms.
@@ -28,16 +26,16 @@ async fn test_last_known_good_versions() -> Result<(), Error> {
 #[tokio::test]
 async fn test_known_good_versions() -> Result<(), Error> {
     let client = reqwest::Client::new();
-    let versions = KnownGoodVersions::fetch(client).await?;
+    let versions = KnownGoodVersions::fetch(&client).await?;
 
     println!("Found {} Chrome versions", versions.versions.len());
 
     // Find a specific version.
-    let target_version = "131.0.6778.204";
+    let target_version: Version = "131.0.6778.204".parse().unwrap();
     if let Some(version) = versions
         .versions
         .iter()
-        .find(|v| v.version.to_string() == target_version)
+        .find(|v| v.version == target_version)
     {
         println!(
             "Found version {}: revision {}",
@@ -50,13 +48,7 @@ async fn test_known_good_versions() -> Result<(), Error> {
             "Chrome downloads available for {} platforms",
             version.downloads.chrome.len()
         );
-        if let Some(download) = version
-            .downloads
-            .chrome
-            .iter()
-            .filter(|it| it.platform == current_platform)
-            .next()
-        {
+        if let Some(download) = version.downloads.chrome.for_platform(current_platform) {
             println!(
                 "Found Chrome download URL for current platform '{current_platform}': {}",
                 download.url
@@ -69,11 +61,7 @@ async fn test_known_good_versions() -> Result<(), Error> {
                 "ChromeDriver available for {} platforms",
                 chromedriver_downloads.len()
             );
-            if let Some(download) = chromedriver_downloads
-                .iter()
-                .filter(|it| it.platform == current_platform)
-                .next()
-            {
+            if let Some(download) = chromedriver_downloads.for_platform(current_platform) {
                 println!(
                     "Found ChromeDriver download for current platform '{current_platform}': {}",
                     download.url

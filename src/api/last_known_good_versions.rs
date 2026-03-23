@@ -2,7 +2,7 @@ use crate::api::channel::Channel;
 use crate::api::version::Version;
 use crate::api::{API_BASE_URL, Download};
 use crate::error::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// JSON Example:
@@ -79,7 +79,7 @@ const LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH: &str =
 
 /// Download links for Chrome, `ChromeDriver`, and Chrome Headless Shell binaries for various
 /// platforms.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Downloads {
     /// Download links for Chrome binaries for various platforms.
     pub chrome: Vec<Download>,
@@ -96,7 +96,7 @@ pub struct Downloads {
 }
 
 /// A Chrome version entry with channel information.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VersionInChannel {
     /// The release channel this version belongs to.
     pub channel: Channel,
@@ -114,7 +114,7 @@ pub struct VersionInChannel {
 /// Response structure for the "last known good versions" API endpoint.
 ///
 /// Contains the most recent version for each Chrome release channel (Stable, Beta, Dev, Canary).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LastKnownGoodVersions {
     /// When this data was last updated.
     #[serde(with = "time::serde::rfc3339")]
@@ -132,8 +132,8 @@ impl LastKnownGoodVersions {
     /// # Errors
     ///
     /// Returns an error if the HTTP request or deserialization fails.
-    pub async fn fetch(client: reqwest::Client) -> Result<Self> {
-        Self::fetch_with_base_url(client, API_BASE_URL.clone()).await
+    pub async fn fetch(client: &reqwest::Client) -> Result<Self> {
+        Self::fetch_with_base_url(client, &API_BASE_URL).await
     }
 
     /// Fetches from a custom base URL (useful for testing).
@@ -142,8 +142,8 @@ impl LastKnownGoodVersions {
     ///
     /// Returns an error if the HTTP request or deserialization fails.
     pub async fn fetch_with_base_url(
-        client: reqwest::Client,
-        base_url: reqwest::Url,
+        client: &reqwest::Client,
+        base_url: &reqwest::Url,
     ) -> Result<LastKnownGoodVersions> {
         let last_known_good_versions = client
             .get(base_url.join(LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
@@ -152,6 +152,36 @@ impl LastKnownGoodVersions {
             .json::<Self>()
             .await?;
         Ok(last_known_good_versions)
+    }
+
+    /// Returns the version info for the given channel, if present.
+    #[must_use]
+    pub fn channel(&self, channel: Channel) -> Option<&VersionInChannel> {
+        self.channels.get(&channel)
+    }
+
+    /// Returns the stable channel version info, if present.
+    #[must_use]
+    pub fn stable(&self) -> Option<&VersionInChannel> {
+        self.channel(Channel::Stable)
+    }
+
+    /// Returns the beta channel version info, if present.
+    #[must_use]
+    pub fn beta(&self) -> Option<&VersionInChannel> {
+        self.channel(Channel::Beta)
+    }
+
+    /// Returns the dev channel version info, if present.
+    #[must_use]
+    pub fn dev(&self) -> Option<&VersionInChannel> {
+        self.channel(Channel::Dev)
+    }
+
+    /// Returns the canary channel version info, if present.
+    #[must_use]
+    pub fn canary(&self) -> Option<&VersionInChannel> {
+        self.channel(Channel::Canary)
     }
 }
 
@@ -172,7 +202,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_request_from_real_world_endpoint() {
-        let result = LastKnownGoodVersions::fetch(reqwest::Client::new()).await;
+        let result = LastKnownGoodVersions::fetch(&reqwest::Client::new()).await;
         assert_that!(result).is_ok();
     }
 
@@ -192,7 +222,7 @@ mod tests {
 
         let url: Url = server.url().parse().unwrap();
 
-        let data = LastKnownGoodVersions::fetch_with_base_url(reqwest::Client::new(), url)
+        let data = LastKnownGoodVersions::fetch_with_base_url(&reqwest::Client::new(), &url)
             .await
             .unwrap();
 

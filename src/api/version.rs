@@ -1,10 +1,18 @@
 use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::cmp::PartialOrd;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+
+/// Error returned when parsing a version string fails.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("{message}")]
+pub struct ParseVersionError {
+    message: String,
+}
 
 /// A version identifier.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Version {
     /// The major version number.
     pub major: u32,
@@ -28,37 +36,68 @@ impl Display for Version {
     }
 }
 
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.major
+            .cmp(&other.major)
+            .then(self.minor.cmp(&other.minor))
+            .then(self.patch.cmp(&other.patch))
+            .then(self.build.cmp(&other.build))
+    }
+}
+
 impl PartialOrd for Version {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.major != other.major {
-            return self.major.partial_cmp(&other.major);
-        }
-        if self.minor != other.minor {
-            return self.minor.partial_cmp(&other.minor);
-        }
-        if self.patch != other.patch {
-            return self.patch.partial_cmp(&other.patch);
-        }
-        if self.build != other.build {
-            return self.build.partial_cmp(&other.build);
-        }
-        Some(std::cmp::Ordering::Equal)
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn parse_version(value: &str) -> Result<Version, String> {
+    fn parse_part<'i>(
+        parts: &mut impl Iterator<Item = &'i str>,
+        named: &'static str,
+    ) -> Result<u32, String> {
+        parts
+            .next()
+            .ok_or_else(|| format!("Did not find part '{named}'."))?
+            .parse::<u32>()
+            .map_err(|err| format!("Failed to parse '{named}' part as an u32: {err}"))
     }
 
-    fn lt(&self, other: &Self) -> bool {
-        self.partial_cmp(other) == Some(std::cmp::Ordering::Less)
+    let mut parts = value.split('.');
+    let major = parse_part(&mut parts, "major")?;
+    let minor = parse_part(&mut parts, "minor")?;
+    let patch = parse_part(&mut parts, "patch")?;
+    let build = parse_part(&mut parts, "build")?;
+
+    if let Some(next) = parts.next() {
+        return Err(format!(
+            "Invalid version string format. Did not expect any additional parts. Got at least the additional part: {next}"
+        ));
     }
 
-    fn le(&self, other: &Self) -> bool {
-        self.partial_cmp(other) != Some(std::cmp::Ordering::Greater)
-    }
+    Ok(Version {
+        major,
+        minor,
+        patch,
+        build,
+    })
+}
 
-    fn gt(&self, other: &Self) -> bool {
-        self.partial_cmp(other) == Some(std::cmp::Ordering::Greater)
-    }
+impl FromStr for Version {
+    type Err = ParseVersionError;
 
-    fn ge(&self, other: &Self) -> bool {
-        self.partial_cmp(other) != Some(std::cmp::Ordering::Less)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_version(s).map_err(|message| ParseVersionError { message })
+    }
+}
+
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -80,39 +119,7 @@ impl<'de> Deserialize<'de> for Version {
             where
                 E: de::Error,
             {
-                fn parse_part<'i, E: de::Error>(
-                    parts: &mut impl Iterator<Item = &'i str>,
-                    named: &'static str,
-                ) -> Result<u32, E> {
-                    parts
-                        .next()
-                        .ok_or_else(|| de::Error::custom(format!("Did not find part '{named}'.")))?
-                        .parse::<u32>()
-                        .map_err(|err| {
-                            de::Error::custom(format!(
-                                "Failed to parse '{named}' part as an u32: {err}"
-                            ))
-                        })
-                }
-
-                let mut parts = value.split('.');
-                let major = parse_part(&mut parts, "major")?;
-                let minor = parse_part(&mut parts, "minor")?;
-                let patch = parse_part(&mut parts, "patch")?;
-                let build = parse_part(&mut parts, "build")?;
-
-                if let Some(next) = parts.next() {
-                    return Err(de::Error::custom(format!(
-                        "Invalid version string format. Did not expect any additional parts. Got at least the additional part: {next}"
-                    )));
-                }
-
-                Ok(Version {
-                    major,
-                    minor,
-                    patch,
-                    build,
-                })
+                parse_version(value).map_err(de::Error::custom)
             }
         }
 
@@ -124,6 +131,7 @@ impl<'de> Deserialize<'de> for Version {
 mod tests {
     use super::*;
     use assertr::prelude::*;
+    use std::collections::HashSet;
 
     #[test]
     fn deserialize_valid_version() {
@@ -314,5 +322,94 @@ mod tests {
         assert_that!(v5).is_equal_to(v5);
         assert_that!(v5).is_less_or_equal_to(v5);
         assert_that!(v5).is_greater_or_equal_to(v5);
+    }
+
+    #[test]
+    fn parse_valid() {
+        assert_that!("1.2.3.4".parse::<Version>())
+            .is_ok()
+            .is_equal_to(Version {
+                major: 1,
+                minor: 2,
+                patch: 3,
+                build: 4,
+            });
+        assert_that!("0.0.0.0".parse::<Version>())
+            .is_ok()
+            .is_equal_to(Version {
+                major: 0,
+                minor: 0,
+                patch: 0,
+                build: 0,
+            });
+    }
+
+    #[test]
+    fn parse_invalid_fails() {
+        assert_that!("".parse::<Version>()).is_err();
+        assert_that!("1".parse::<Version>()).is_err();
+        assert_that!("1.2".parse::<Version>()).is_err();
+        assert_that!("1.2.3".parse::<Version>()).is_err();
+        assert_that!("1.2.3.4.5".parse::<Version>()).is_err();
+        assert_that!("a.b.c.d".parse::<Version>()).is_err();
+    }
+
+    #[test]
+    fn serialize_round_trip() {
+        let version = Version {
+            major: 132,
+            minor: 0,
+            patch: 6834,
+            build: 83,
+        };
+        let json = serde_json::to_string(&version).unwrap();
+        assert_that!(json.clone()).is_equal_to(String::from("\"132.0.6834.83\""));
+        let deserialized: Version = serde_json::from_str(&json).unwrap();
+        assert_that!(deserialized).is_equal_to(version);
+    }
+
+    #[test]
+    fn ord_sorting() {
+        let v3 = Version {
+            major: 2,
+            minor: 0,
+            patch: 0,
+            build: 0,
+        };
+        let v1 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            build: 0,
+        };
+        let v2 = Version {
+            major: 1,
+            minor: 1,
+            patch: 0,
+            build: 0,
+        };
+        let mut versions = vec![v3, v1, v2];
+        versions.sort();
+        assert_that!(versions).is_equal_to(vec![v1, v2, v3]);
+    }
+
+    #[test]
+    fn hash_in_set() {
+        let v1 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            build: 0,
+        };
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            build: 0,
+        };
+        let mut set = HashSet::new();
+        set.insert(v1);
+        set.insert(v2);
+        assert_that!(set.len()).is_equal_to(1);
     }
 }

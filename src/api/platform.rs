@@ -1,15 +1,23 @@
 use crate::error::Error;
 use crate::error::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+
+/// Error returned when parsing a platform string fails.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("Unknown platform: '{value}'. Expected one of: linux64, mac-arm64, mac-x64, win32, win64")]
+pub struct ParsePlatformError {
+    value: String,
+}
 
 /// Supported platforms for Chrome and `ChromeDriver` downloads.
 ///
 /// This site <https://googlechromelabs.github.io/chrome-for-testing/> show the platform names
 /// defined here.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
     /// Linux x64 platform.
     #[serde(rename = "linux64")]
@@ -41,6 +49,23 @@ impl Display for Platform {
             Platform::Win32 => "win32",
             Platform::Win64 => "win64",
         })
+    }
+}
+
+impl FromStr for Platform {
+    type Err = ParsePlatformError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "linux64" => Ok(Platform::Linux64),
+            "mac-arm64" => Ok(Platform::MacArm64),
+            "mac-x64" => Ok(Platform::MacX64),
+            "win32" => Ok(Platform::Win32),
+            "win64" => Ok(Platform::Win64),
+            _ => Err(ParsePlatformError {
+                value: s.to_owned(),
+            }),
+        }
     }
 }
 
@@ -126,5 +151,42 @@ impl Platform {
             Platform::Win32 | Platform::Win64 => true,
             Platform::Linux64 | Platform::MacArm64 | Platform::MacX64 => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assertr::prelude::*;
+
+    #[test]
+    fn parse_to_string_round_trip() {
+        let platforms = [
+            ("linux64", Platform::Linux64),
+            ("mac-arm64", Platform::MacArm64),
+            ("mac-x64", Platform::MacX64),
+            ("win32", Platform::Win32),
+            ("win64", Platform::Win64),
+        ];
+        for (s, expected) in platforms {
+            assert_that!(s.parse::<Platform>())
+                .is_ok()
+                .is_equal_to(expected);
+            assert_that!(expected.to_string()).is_equal_to(s);
+        }
+    }
+
+    #[test]
+    fn parse_invalid_variant_fails() {
+        assert_that!("Linux64".parse::<Platform>()).is_err();
+        assert_that!("unknown".parse::<Platform>()).is_err();
+    }
+
+    #[test]
+    fn serialized_value_matches_display_output() {
+        assert_that!(serde_json::to_string(&Platform::Linux64).unwrap())
+            .is_equal_to(String::from("\"linux64\""));
+        assert_that!(serde_json::to_string(&Platform::MacArm64).unwrap())
+            .is_equal_to(String::from("\"mac-arm64\""));
     }
 }
