@@ -236,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn executable_path_file_names_match_binary_names() {
+    fn executable_path_file_names_match_executable_names() {
         let platforms = [
             Platform::Linux64,
             Platform::MacArm64,
