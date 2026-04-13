@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::env::consts;
 use std::fmt::{Display, Formatter};
+use std::path::Path;
 use std::str::FromStr;
 
 /// Error returned when parsing a platform string fails.
@@ -109,7 +110,7 @@ impl Platform {
 
     /// Filename of the Chrome executable.
     #[must_use]
-    pub fn chrome_binary_name(self) -> &'static str {
+    pub fn chrome_executable_name(self) -> &'static str {
         match self {
             Platform::Linux64 => "chrome",
             Platform::MacArm64 | Platform::MacX64 => "Google Chrome for Testing",
@@ -119,26 +120,62 @@ impl Platform {
 
     /// Relative path of the Chrome executable inside the unpacked Chrome archive.
     #[must_use]
-    pub fn chrome_executable_path(self) -> &'static str {
+    pub fn chrome_executable_path(self) -> &'static Path {
         match self {
-            Platform::Linux64 => "chrome-linux64/chrome",
-            Platform::MacArm64 => {
-                "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
-            }
-            Platform::MacX64 => {
-                "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
-            }
-            Platform::Win32 => "chrome-win32/chrome.exe",
-            Platform::Win64 => "chrome-win64/chrome.exe",
+            Platform::Linux64 => Path::new("chrome-linux64/chrome"),
+            Platform::MacArm64 => Path::new(
+                "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+            ),
+            Platform::MacX64 => Path::new(
+                "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+            ),
+            Platform::Win32 => Path::new("chrome-win32/chrome.exe"),
+            Platform::Win64 => Path::new("chrome-win64/chrome.exe"),
         }
     }
 
     /// Filename of the `ChromeDriver` executable.
     #[must_use]
-    pub fn chromedriver_binary_name(self) -> &'static str {
+    pub fn chromedriver_executable_name(self) -> &'static str {
         match self {
             Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",
             Platform::Win32 | Platform::Win64 => "chromedriver.exe",
+        }
+    }
+
+    /// Relative path of the `ChromeDriver` executable inside the unpacked `ChromeDriver` archive.
+    #[must_use]
+    pub fn chromedriver_executable_path(self) -> &'static Path {
+        match self {
+            Platform::Linux64 => Path::new("chromedriver-linux64/chromedriver"),
+            Platform::MacArm64 => Path::new("chromedriver-mac-arm64/chromedriver"),
+            Platform::MacX64 => Path::new("chromedriver-mac-x64/chromedriver"),
+            Platform::Win32 => Path::new("chromedriver-win32/chromedriver.exe"),
+            Platform::Win64 => Path::new("chromedriver-win64/chromedriver.exe"),
+        }
+    }
+
+    /// Filename of the Chrome Headless Shell executable.
+    #[must_use]
+    pub fn chrome_headless_shell_executable_name(self) -> &'static str {
+        match self {
+            Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chrome-headless-shell",
+            Platform::Win32 | Platform::Win64 => "chrome-headless-shell.exe",
+        }
+    }
+
+    /// Relative path of the Chrome Headless Shell executable inside the unpacked
+    /// Chrome Headless Shell archive.
+    #[must_use]
+    pub fn chrome_headless_shell_executable_path(self) -> &'static Path {
+        match self {
+            Platform::Linux64 => Path::new("chrome-headless-shell-linux64/chrome-headless-shell"),
+            Platform::MacArm64 => {
+                Path::new("chrome-headless-shell-mac-arm64/chrome-headless-shell")
+            }
+            Platform::MacX64 => Path::new("chrome-headless-shell-mac-x64/chrome-headless-shell"),
+            Platform::Win32 => Path::new("chrome-headless-shell-win32/chrome-headless-shell.exe"),
+            Platform::Win64 => Path::new("chrome-headless-shell-win64/chrome-headless-shell.exe"),
         }
     }
 
@@ -199,29 +236,38 @@ mod tests {
     }
 
     #[test]
-    fn executable_names_match_platform_archive_contents() {
-        assert_that!(Platform::Linux64.chrome_binary_name()).is_equal_to("chrome");
-        assert_that!(Platform::MacArm64.chrome_binary_name())
-            .is_equal_to("Google Chrome for Testing");
-        assert_that!(Platform::MacX64.chrome_binary_name())
-            .is_equal_to("Google Chrome for Testing");
-        assert_that!(Platform::Win32.chrome_binary_name()).is_equal_to("chrome.exe");
-        assert_that!(Platform::Win64.chrome_binary_name()).is_equal_to("chrome.exe");
-    }
+    fn executable_path_file_names_match_binary_names() {
+        let platforms = [
+            Platform::Linux64,
+            Platform::MacArm64,
+            Platform::MacX64,
+            Platform::Win32,
+            Platform::Win64,
+        ];
 
-    #[test]
-    fn chrome_executable_paths_match_platform_archive_contents() {
-        assert_that!(Platform::Linux64.chrome_executable_path())
-            .is_equal_to("chrome-linux64/chrome");
-        assert_that!(Platform::MacArm64.chrome_executable_path())
-            .is_equal_to("chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
-        assert_that!(Platform::MacX64.chrome_executable_path()).is_equal_to(
-            "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        );
-        assert_that!(Platform::Win32.chrome_executable_path())
-            .is_equal_to("chrome-win32/chrome.exe");
-        assert_that!(Platform::Win64.chrome_executable_path())
-            .is_equal_to("chrome-win64/chrome.exe");
+        for platform in platforms {
+            assert_that!(
+                platform
+                    .chrome_executable_path()
+                    .file_name()
+                    .and_then(|it| it.to_str())
+            )
+            .is_equal_to(Some(platform.chrome_executable_name()));
+            assert_that!(
+                platform
+                    .chromedriver_executable_path()
+                    .file_name()
+                    .and_then(|it| it.to_str())
+            )
+            .is_equal_to(Some(platform.chromedriver_executable_name()));
+            assert_that!(
+                platform
+                    .chrome_headless_shell_executable_path()
+                    .file_name()
+                    .and_then(|it| it.to_str())
+            )
+            .is_equal_to(Some(platform.chrome_headless_shell_executable_name()));
+        }
     }
 
     #[test]

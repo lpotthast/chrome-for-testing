@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `chrome_for_platform()`, `chromedriver_for_platform()`, and `chrome_headless_shell_for_platform()`.
 - A crate-level `Result<T>` alias for report-returning crate APIs.
 - `Download::parsed_url()` for parsing upstream download URL strings into typed `url::Url` values.
-- `Platform::chrome_executable_path()` for the relative path to the Chrome executable inside an unpacked archive.
+- `Platform::chrome_headless_shell_executable_name()`.
+- Typed platform executable path helpers for relative paths inside unpacked archives:
+  `chrome_executable_path()`, `chromedriver_executable_path()`, and `chrome_headless_shell_executable_path()`.
 
 ### Changed
 
@@ -29,10 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preserving the dedicated parse error contexts.
 - **Breaking:** `KnownGoodDownloads` now has the additional public `chrome_headless_shell` field.
 - **Breaking:** `LastKnownGoodVersions::channels` is private; use `channels()` to inspect the full channel map.
-- **Breaking:** `Platform::chrome_binary_name()` now returns `Google Chrome for Testing` for both macOS platforms,
+- **Breaking:** `Platform::chrome_binary_name()` is now `Platform::chrome_executable_name()`.
+- **Breaking:** `Platform::chromedriver_binary_name()` is now `Platform::chromedriver_executable_name()`.
+- **Breaking:** `Platform::chrome_executable_name()` now returns `Google Chrome for Testing` for both macOS platforms,
   matching the executable name instead of the `.app` bundle or Linux binary name.
 - Endpoint fetch errors now attach endpoint-specific context and preserve non-success HTTP status errors.
-- `fetch_with_base_url()` now joins endpoint paths through a shared fetch helper.
 - `LastKnownGoodVersions::channel()` now accepts any `impl Borrow<Channel>`.
 - `LastKnownGoodVersions::channels()` exposes a map so newly-added upstream channels are preserved, while known-channel
   convenience accessors continue to return `Option<&VersionInChannel>`.
