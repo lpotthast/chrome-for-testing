@@ -1,3 +1,4 @@
+use rootcause::{Report, report};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
@@ -85,10 +86,10 @@ fn parse_version(value: &str) -> Result<Version, String> {
 }
 
 impl FromStr for Version {
-    type Err = ParseVersionError;
+    type Err = Report<ParseVersionError>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_version(s).map_err(|message| ParseVersionError { message })
+        parse_version(s).map_err(|message| report!(ParseVersionError { message }))
     }
 }
 
@@ -220,7 +221,7 @@ mod tests {
             let result = serde_json::from_str::<Version>(&json);
             assert_that!(result)
                 .is_err()
-                .derive(|it| it.to_string())
+                .derive(std::string::ToString::to_string)
                 .contains(expected_error_substring);
         }
     }

@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::error::Result;
+use rootcause::{Report, report};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::env::consts;
@@ -53,18 +53,18 @@ impl Display for Platform {
 }
 
 impl FromStr for Platform {
-    type Err = ParsePlatformError;
+    type Err = Report<ParsePlatformError>;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "linux64" => Ok(Platform::Linux64),
             "mac-arm64" => Ok(Platform::MacArm64),
             "mac-x64" => Ok(Platform::MacX64),
             "win32" => Ok(Platform::Win32),
             "win64" => Ok(Platform::Win64),
-            _ => Err(ParsePlatformError {
+            _ => Err(report!(ParsePlatformError {
                 value: s.to_owned(),
-            }),
+            })),
         }
     }
 }
@@ -75,49 +75,65 @@ impl Platform {
     /// # Errors
     ///
     /// Returns an error if the current OS/architecture combination is not supported.
-    pub fn detect() -> Result<Platform> {
+    pub fn detect() -> crate::Result<Platform> {
         match consts::OS {
             os @ "windows" => match consts::ARCH {
                 "x86" => Ok(Platform::Win32),
                 "x86_64" => Ok(Platform::Win64),
-                arch => Err(Error::UnsupportedPlatform {
+                arch => Err(report!(Error::UnsupportedPlatform {
                     os: Cow::Borrowed(os),
                     arch: Cow::Borrowed(arch),
-                }),
+                })),
             },
             os @ "linux" => match consts::ARCH {
                 "x86_64" => Ok(Platform::Linux64),
-                arch => Err(Error::UnsupportedPlatform {
+                arch => Err(report!(Error::UnsupportedPlatform {
                     os: Cow::Borrowed(os),
                     arch: Cow::Borrowed(arch),
-                }),
+                })),
             },
             os @ "macos" => match consts::ARCH {
                 "x86_64" => Ok(Platform::MacX64),
                 "arm" | "aarch64" => Ok(Platform::MacArm64),
-                arch => Err(Error::UnsupportedPlatform {
+                arch => Err(report!(Error::UnsupportedPlatform {
                     os: Cow::Borrowed(os),
                     arch: Cow::Borrowed(arch),
-                }),
+                })),
             },
-            os => Err(Error::UnsupportedPlatform {
+            os => Err(report!(Error::UnsupportedPlatform {
                 os: Cow::Borrowed(os),
                 arch: Cow::Borrowed(consts::ARCH),
-            }),
+            })),
         }
     }
 
-    /// Filename of the chrome binary.
+    /// Filename of the Chrome executable.
     #[must_use]
     pub fn chrome_binary_name(self) -> &'static str {
         match self {
-            Platform::Linux64 | Platform::MacX64 => "chrome",
-            Platform::MacArm64 => "Google Chrome for Testing.app",
+            Platform::Linux64 => "chrome",
+            Platform::MacArm64 | Platform::MacX64 => "Google Chrome for Testing",
             Platform::Win32 | Platform::Win64 => "chrome.exe",
         }
     }
 
-    /// Filename of the chromedriver binary.
+    /// Relative path of the Chrome executable inside the unpacked Chrome archive.
+    #[must_use]
+    pub fn chrome_executable_path(self) -> &'static str {
+        match self {
+            Platform::Linux64 => "chrome-linux64/chrome",
+            Platform::MacArm64 => {
+                "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+            }
+            Platform::MacX64 => {
+                "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+            }
+            Platform::Win32 => "chrome-win32/chrome.exe",
+            Platform::Win64 => "chrome-win64/chrome.exe",
+        }
+    }
+
+    /// Filename of the `ChromeDriver` executable.
     #[must_use]
     pub fn chromedriver_binary_name(self) -> &'static str {
         match self {
@@ -180,6 +196,32 @@ mod tests {
     fn parse_invalid_variant_fails() {
         assert_that!("Linux64".parse::<Platform>()).is_err();
         assert_that!("unknown".parse::<Platform>()).is_err();
+    }
+
+    #[test]
+    fn executable_names_match_platform_archive_contents() {
+        assert_that!(Platform::Linux64.chrome_binary_name()).is_equal_to("chrome");
+        assert_that!(Platform::MacArm64.chrome_binary_name())
+            .is_equal_to("Google Chrome for Testing");
+        assert_that!(Platform::MacX64.chrome_binary_name())
+            .is_equal_to("Google Chrome for Testing");
+        assert_that!(Platform::Win32.chrome_binary_name()).is_equal_to("chrome.exe");
+        assert_that!(Platform::Win64.chrome_binary_name()).is_equal_to("chrome.exe");
+    }
+
+    #[test]
+    fn chrome_executable_paths_match_platform_archive_contents() {
+        assert_that!(Platform::Linux64.chrome_executable_path())
+            .is_equal_to("chrome-linux64/chrome");
+        assert_that!(Platform::MacArm64.chrome_executable_path())
+            .is_equal_to("chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
+        assert_that!(Platform::MacX64.chrome_executable_path()).is_equal_to(
+            "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        );
+        assert_that!(Platform::Win32.chrome_executable_path())
+            .is_equal_to("chrome-win32/chrome.exe");
+        assert_that!(Platform::Win64.chrome_executable_path())
+            .is_equal_to("chrome-win64/chrome.exe");
     }
 
     #[test]

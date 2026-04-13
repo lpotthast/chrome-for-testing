@@ -1,3 +1,4 @@
+use rootcause::{Report, ReportConversion, markers};
 use std::borrow::Cow;
 use thiserror::Error;
 
@@ -23,5 +24,24 @@ pub enum Error {
     },
 }
 
-/// A convenience type alias for `Result<T, Error>`.
-pub type Result<T> = std::result::Result<T, Error>;
+impl<T> ReportConversion<url::ParseError, markers::Mutable, T> for Error
+where
+    Error: markers::ObjectMarkerFor<T>,
+{
+    fn convert_report(
+        report: Report<url::ParseError, markers::Mutable, T>,
+    ) -> Report<Self, markers::Mutable, T> {
+        report.context_transform(Error::UrlParsing)
+    }
+}
+
+impl<T> ReportConversion<reqwest::Error, markers::Mutable, T> for Error
+where
+    Error: markers::ObjectMarkerFor<T>,
+{
+    fn convert_report(
+        report: Report<reqwest::Error, markers::Mutable, T>,
+    ) -> Report<Self, markers::Mutable, T> {
+        report.context_transform(Error::Request)
+    }
+}

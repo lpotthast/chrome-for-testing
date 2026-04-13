@@ -1,8 +1,10 @@
 use crate::api::channel::Channel;
+use crate::api::platform::Platform;
 use crate::api::version::Version;
-use crate::api::{API_BASE_URL, Download};
-use crate::error::Result;
+use crate::api::{API_BASE_URL, Download, DownloadsByPlatform, fetch_endpoint};
+use serde::de::Error as DeError;
 use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
 use std::collections::HashMap;
 
 /// JSON Example:
@@ -95,6 +97,26 @@ pub struct Downloads {
     pub chrome_headless_shell: Vec<Download>,
 }
 
+impl Downloads {
+    /// Returns the Chrome download entry for the given platform, if available.
+    #[must_use]
+    pub fn chrome_for_platform(&self, platform: Platform) -> Option<&Download> {
+        self.chrome.for_platform(platform)
+    }
+
+    /// Returns the `ChromeDriver` download entry for the given platform, if available.
+    #[must_use]
+    pub fn chromedriver_for_platform(&self, platform: Platform) -> Option<&Download> {
+        self.chromedriver.for_platform(platform)
+    }
+
+    /// Returns the Chrome Headless Shell download entry for the given platform, if available.
+    #[must_use]
+    pub fn chrome_headless_shell_for_platform(&self, platform: Platform) -> Option<&Download> {
+        self.chrome_headless_shell.for_platform(platform)
+    }
+}
+
 /// A Chrome version entry with channel information.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VersionInChannel {
@@ -111,6 +133,26 @@ pub struct VersionInChannel {
     pub downloads: Downloads,
 }
 
+fn deserialize_channels<'de, D>(
+    deserializer: D,
+) -> Result<HashMap<Channel, VersionInChannel>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let channels = HashMap::<Channel, VersionInChannel>::deserialize(deserializer)?;
+
+    for (key, value) in &channels {
+        if key != &value.channel {
+            return Err(D::Error::custom(format!(
+                "expected channels.{key}.channel to be {key}, got {}",
+                value.channel
+            )));
+        }
+    }
+
+    Ok(channels)
+}
+
 /// Response structure for the "last known good versions" API endpoint.
 ///
 /// Contains the most recent version for each Chrome release channel (Stable, Beta, Dev, Canary).
@@ -121,7 +163,12 @@ pub struct LastKnownGoodVersions {
     pub timestamp: time::OffsetDateTime,
 
     /// The latest known good version for each release channel.
-    pub channels: HashMap<Channel, VersionInChannel>,
+    ///
+    /// The Chrome for Testing docs currently define Stable, Beta, Dev, and Canary for this
+    /// endpoint, but this remains a map so the crate can preserve newly-added upstream channels
+    /// instead of discarding them.
+    #[serde(deserialize_with = "deserialize_channels")]
+    channels: HashMap<Channel, VersionInChannel>,
 }
 
 impl LastKnownGoodVersions {
@@ -131,8 +178,9 @@ impl LastKnownGoodVersions {
     ///
     /// # Errors
     ///
-    /// Returns an error if the HTTP request or deserialization fails.
-    pub async fn fetch(client: &reqwest::Client) -> Result<Self> {
+    /// Returns an error if the HTTP request fails, the response has an unsuccessful status, or
+    /// deserialization fails.
+    pub async fn fetch(client: &reqwest::Client) -> crate::Result<Self> {
         Self::fetch_with_base_url(client, &API_BASE_URL).await
     }
 
@@ -140,45 +188,52 @@ impl LastKnownGoodVersions {
     ///
     /// # Errors
     ///
-    /// Returns an error if the HTTP request or deserialization fails.
+    /// Returns an error if the HTTP request fails, the response has an unsuccessful status, or
+    /// deserialization fails.
     pub async fn fetch_with_base_url(
         client: &reqwest::Client,
         base_url: &reqwest::Url,
-    ) -> Result<LastKnownGoodVersions> {
-        let last_known_good_versions = client
-            .get(base_url.join(LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)?)
-            .send()
-            .await?
-            .json::<Self>()
-            .await?;
-        Ok(last_known_good_versions)
+    ) -> crate::Result<LastKnownGoodVersions> {
+        fetch_endpoint::<Self>(
+            client,
+            base_url,
+            LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH,
+            "LastKnownGoodVersions",
+        )
+        .await
     }
 
-    /// Returns the version info for the given channel, if present.
+    /// Returns the version info for the given channel.
     #[must_use]
-    pub fn channel(&self, channel: Channel) -> Option<&VersionInChannel> {
-        self.channels.get(&channel)
+    pub fn channel(&self, channel: impl Borrow<Channel>) -> Option<&VersionInChannel> {
+        self.channels.get(channel.borrow())
     }
 
-    /// Returns the stable channel version info, if present.
+    /// Returns the latest known good versions by release channel.
+    #[must_use]
+    pub fn channels(&self) -> &HashMap<Channel, VersionInChannel> {
+        &self.channels
+    }
+
+    /// Returns the Stable channel version info, if present.
     #[must_use]
     pub fn stable(&self) -> Option<&VersionInChannel> {
         self.channel(Channel::Stable)
     }
 
-    /// Returns the beta channel version info, if present.
+    /// Returns the Beta channel version info, if present.
     #[must_use]
     pub fn beta(&self) -> Option<&VersionInChannel> {
         self.channel(Channel::Beta)
     }
 
-    /// Returns the dev channel version info, if present.
+    /// Returns the Dev channel version info, if present.
     #[must_use]
     pub fn dev(&self) -> Option<&VersionInChannel> {
         self.channel(Channel::Dev)
     }
 
-    /// Returns the canary channel version info, if present.
+    /// Returns the Canary channel version info, if present.
     #[must_use]
     pub fn canary(&self) -> Option<&VersionInChannel> {
         self.channel(Channel::Canary)
@@ -195,11 +250,13 @@ mod tests {
     };
     use crate::api::platform::Platform;
     use crate::api::version::Version;
+    use crate::error::Error;
     use assertr::prelude::*;
     use std::collections::HashMap;
     use time::macros::datetime;
     use url::Url;
 
+    // This test should not be `#[ignore]`, even though it hits the Chrome For Testing API.
     #[tokio::test]
     async fn can_request_from_real_world_endpoint() {
         let result = LastKnownGoodVersions::fetch(&reqwest::Client::new()).await;
@@ -208,15 +265,15 @@ mod tests {
 
     //noinspection DuplicatedCode
     #[tokio::test]
+    #[allow(clippy::too_many_lines)]
     async fn can_query_last_known_good_versions_api_endpoint_and_deserialize_response() {
         let mut server = mockito::Server::new_async().await;
-
         let _mock = server
             .mock("GET", LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(include_str!(
-                "./../../test-data/last_known_good_versions_test_response.json"
+                "./../../test-data/last_known_good_versions_with_downloads_test_response.json"
             ))
             .create();
 
@@ -227,124 +284,183 @@ mod tests {
             .unwrap();
 
         assert_that!(data).is_equal_to(LastKnownGoodVersions {
-            timestamp: datetime!(2025-01-17 10:09:31.683 UTC),
+            timestamp: datetime!(2026-04-13 08:53:52.841 UTC),
             channels: HashMap::from([
                 (
                     Channel::Stable,
                     VersionInChannel {
-                        channel: Channel::Stable,
-                        version: Version { major: 132, minor: 0, patch: 6834, build: 83 },
-                        revision: String::from("1381561"),
-                        downloads: Downloads {
-                            chrome: vec![
-                                Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chrome-linux64.zip") },
-                                Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-arm64/chrome-mac-arm64.zip") },
-                                Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-x64/chrome-mac-x64.zip") },
-                                Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win32/chrome-win32.zip") },
-                                Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win64/chrome-win64.zip") },
-                            ],
-                            chromedriver: vec![
-                                Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chromedriver-linux64.zip") },
-                                Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-arm64/chromedriver-mac-arm64.zip") },
-                                Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-x64/chromedriver-mac-x64.zip") },
-                                Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win32/chromedriver-win32.zip") },
-                                Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win64/chromedriver-win64.zip") },
-                            ],
-                            chrome_headless_shell: vec![
-                                Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chrome-headless-shell-linux64.zip") },
-                                Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
-                                Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/mac-x64/chrome-headless-shell-mac-x64.zip") },
-                                Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win32/chrome-headless-shell-win32.zip") },
-                                Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/win64/chrome-headless-shell-win64.zip") },
-                            ],
-                        },
+                    channel: Channel::Stable,
+                    version: Version { major: 147, minor: 0, patch: 7727, build: 56 },
+                    revision: String::from("1596535"),
+                    downloads: Downloads {
+                        chrome: vec![
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/linux64/chrome-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-arm64/chrome-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-x64/chrome-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win32/chrome-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win64/chrome-win64.zip") },
+                        ],
+                        chromedriver: vec![
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/linux64/chromedriver-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-arm64/chromedriver-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-x64/chromedriver-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win32/chromedriver-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win64/chromedriver-win64.zip") },
+                        ],
+                        chrome_headless_shell: vec![
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/linux64/chrome-headless-shell-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/mac-x64/chrome-headless-shell-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win32/chrome-headless-shell-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.56/win64/chrome-headless-shell-win64.zip") },
+                        ],
+                    },
                     }
                 ),
                 (Channel::Beta, VersionInChannel {
                     channel: Channel::Beta,
-                    version: Version { major: 133, minor: 0, patch: 6943, build: 16 },
-                    revision: String::from("1402768"),
+                    version: Version { major: 148, minor: 0, patch: 7778, build: 5 },
+                    revision: String::from("1610480"),
                     downloads: Downloads {
                         chrome: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/linux64/chrome-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-arm64/chrome-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-x64/chrome-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win32/chrome-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win64/chrome-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/linux64/chrome-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-arm64/chrome-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-x64/chrome-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win32/chrome-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win64/chrome-win64.zip") },
                         ],
                         chromedriver: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/linux64/chromedriver-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-arm64/chromedriver-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-x64/chromedriver-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win32/chromedriver-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win64/chromedriver-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/linux64/chromedriver-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-arm64/chromedriver-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-x64/chromedriver-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win32/chromedriver-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win64/chromedriver-win64.zip") },
                         ],
                         chrome_headless_shell: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/linux64/chrome-headless-shell-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/mac-x64/chrome-headless-shell-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win32/chrome-headless-shell-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.16/win64/chrome-headless-shell-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/linux64/chrome-headless-shell-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/mac-x64/chrome-headless-shell-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win32/chrome-headless-shell-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.5/win64/chrome-headless-shell-win64.zip") },
                         ],
                     },
                 }),
                 (Channel::Dev, VersionInChannel {
                     channel: Channel::Dev,
-                    version: Version { major: 134, minor: 0, patch: 6958, build: 2 },
-                    revision: String::from("1406477"),
+                    version: Version { major: 148, minor: 0, patch: 7766, build: 3 },
+                    revision: String::from("1607787"),
                     downloads: Downloads {
                         chrome: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/linux64/chrome-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-arm64/chrome-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-x64/chrome-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win32/chrome-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win64/chrome-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/linux64/chrome-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-arm64/chrome-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-x64/chrome-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win32/chrome-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win64/chrome-win64.zip") },
                         ],
                         chromedriver: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/linux64/chromedriver-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-arm64/chromedriver-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-x64/chromedriver-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win32/chromedriver-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win64/chromedriver-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/linux64/chromedriver-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-arm64/chromedriver-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-x64/chromedriver-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win32/chromedriver-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win64/chromedriver-win64.zip") },
                         ],
                         chrome_headless_shell: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/linux64/chrome-headless-shell-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/mac-x64/chrome-headless-shell-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win32/chrome-headless-shell-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6958.2/win64/chrome-headless-shell-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/linux64/chrome-headless-shell-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/mac-x64/chrome-headless-shell-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win32/chrome-headless-shell-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/148.0.7766.3/win64/chrome-headless-shell-win64.zip") },
                         ],
                     },
                 }),
                 (Channel::Canary, VersionInChannel {
                     channel: Channel::Canary,
-                    version: Version { major: 134, minor: 0, patch: 6962, build: 0 },
-                    revision: String::from("1407692"),
+                    version: Version { major: 149, minor: 0, patch: 7789, build: 0 },
+                    revision: String::from("1613465"),
                     downloads: Downloads {
                         chrome: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/linux64/chrome-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-arm64/chrome-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-x64/chrome-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win32/chrome-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win64/chrome-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chrome-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chrome-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chrome-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chrome-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chrome-win64.zip") },
                         ],
                         chromedriver: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/linux64/chromedriver-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-arm64/chromedriver-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-x64/chromedriver-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win32/chromedriver-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win64/chromedriver-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chromedriver-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chromedriver-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chromedriver-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chromedriver-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chromedriver-win64.zip") },
                         ],
                         chrome_headless_shell: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/linux64/chrome-headless-shell-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/mac-x64/chrome-headless-shell-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win32/chrome-headless-shell-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/134.0.6962.0/win64/chrome-headless-shell-win64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chrome-headless-shell-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chrome-headless-shell-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chrome-headless-shell-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chrome-headless-shell-win64.zip") },
                         ],
                     },
-                })
+                }),
             ]),
         });
+    }
+
+    #[tokio::test]
+    async fn unsuccessful_http_status_is_reported_as_request_error() {
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", LAST_KNOWN_GOOD_VERSIONS_WITH_DOWNLOADS_JSON_PATH)
+            .with_status(500)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!(
+                "./../../test-data/last_known_good_versions_with_downloads_test_response.json"
+            ))
+            .create();
+
+        let url: Url = server.url().parse().unwrap();
+
+        let err = LastKnownGoodVersions::fetch_with_base_url(&reqwest::Client::new(), &url)
+            .await
+            .unwrap_err();
+
+        let Error::Request(request_error) = err.current_context() else {
+            panic!("expected request error, got: {:?}", err.current_context());
+        };
+
+        assert_that!(request_error.status())
+            .is_equal_to(Some(reqwest::StatusCode::INTERNAL_SERVER_ERROR));
+    }
+
+    #[test]
+    fn deserialization_rejects_channel_mismatch() {
+        let json = include_str!(
+            "./../../test-data/last_known_good_versions_with_downloads_test_response.json"
+        )
+        .replacen(r#""channel": "Stable""#, r#""channel": "Beta""#, 1);
+
+        let result = serde_json::from_str::<LastKnownGoodVersions>(&json);
+
+        assert_that!(result)
+            .is_err()
+            .derive(|it| it.to_string())
+            .contains("expected channels.Stable.channel to be Stable, got Beta");
+    }
+
+    #[test]
+    fn deserialization_preserves_unknown_channels() {
+        let json = include_str!(
+            "./../../test-data/last_known_good_versions_with_downloads_test_response.json"
+        )
+        .replacen(r#""Canary": {"#, r#""Extended": {"#, 1)
+        .replacen(r#""channel": "Canary""#, r#""channel": "Extended""#, 1);
+
+        let data = serde_json::from_str::<LastKnownGoodVersions>(&json).unwrap();
+        let extended = Channel::Other(String::from("Extended"));
+
+        assert_that!(data.canary()).is_none();
+        assert_that!(data.channel(&extended))
+            .is_some()
+            .derive(|it| it.channel.clone())
+            .is_equal_to(extended);
     }
 }

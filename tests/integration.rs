@@ -1,9 +1,10 @@
 use chrome_for_testing::{
-    DownloadsByPlatform, Error, KnownGoodVersions, LastKnownGoodVersions, Platform, Version,
+    DownloadsByPlatform, KnownGoodVersions, LastKnownGoodVersions, Platform, Result, Version,
 };
 
+// This test should not be `#[ignore]`, even though it hits the Chrome For Testing API.
 #[tokio::test]
-async fn test_last_known_good_versions() -> Result<(), Error> {
+async fn test_last_known_good_versions() -> Result<()> {
     let client = reqwest::Client::new();
     let versions = LastKnownGoodVersions::fetch(&client).await?;
 
@@ -23,8 +24,9 @@ async fn test_last_known_good_versions() -> Result<(), Error> {
     Ok(())
 }
 
+// This test should not be `#[ignore]`, even though it hits the Chrome For Testing API.
 #[tokio::test]
-async fn test_known_good_versions() -> Result<(), Error> {
+async fn test_known_good_versions() -> Result<()> {
     let client = reqwest::Client::new();
     let versions = KnownGoodVersions::fetch(&client).await?;
 

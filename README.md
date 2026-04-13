@@ -1,8 +1,9 @@
 # chrome-for-testing
 
-Provides serde-enabled type definitions covering the **chrome-for-testing** JSON API responses,
-and programmatic access to the API endpoints through `reqwest`, allowing you to fetch information
-about available Chrome and ChromeDriver versions for automated testing.
+Provides serde-enabled type definitions covering the main **chrome-for-testing** JSON API responses
+with download URLs, and programmatic access to those endpoints through `reqwest`, allowing you to
+fetch information about available Chrome, ChromeDriver, and Chrome Headless Shell versions for
+automated testing.
 
 ## Links
 
@@ -25,7 +26,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chrome-for-testing = "0.3"
+chrome-for-testing = "0.4"
 ```
 
 Or use `cargo add`:
@@ -36,12 +37,13 @@ cargo add chrome-for-testing
 
 ## Features
 
-- **Type-safe API access** - Serde-enabled type definitions for all API responses.
+- **Type-safe API access** - Serde-enabled type definitions for the main API responses with download URLs.
 - **Async support** - Built on `reqwest` for non-blocking HTTP requests.
 - **Provides access to the following APIs**:
     - `KnownGoodVersions` - Get all historical Chrome versions.
     - `LastKnownGoodVersions` - Get latest versions for each release channel.
 - **Platform detection** - Automatically detect the current platform (os/arch) to filter responses.
+- **Typed URL access** - Parse download URL strings into `url::Url` values with `Download::parsed_url()`.
 - **ChromeDriver utilities** - Additional tools for ChromeDriver configuration.
 
 ## Usage
@@ -51,10 +53,10 @@ cargo add chrome-for-testing
 Use this API if you just want to know the latest version of one particular (or multiple) release channels.
 
 ```rust
-use chrome_for_testing::{Error, LastKnownGoodVersions};
+use chrome_for_testing::{LastKnownGoodVersions, Result};
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     let client = reqwest::Client::new();
     let versions = LastKnownGoodVersions::fetch(&client).await?;
 
@@ -79,10 +81,10 @@ Use this API if you just want to know all historical version. Particularly usefu
 This example also shows how the `Platform` type can be used to filter available download URLs for the current platform.
 
 ```rust
-use chrome_for_testing::{DownloadsByPlatform, Error, KnownGoodVersions, Platform, Version};
+use chrome_for_testing::{DownloadsByPlatform, KnownGoodVersions, Platform, Result, Version};
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     let client = reqwest::Client::new();
     let versions = KnownGoodVersions::fetch(&client).await?;
 
@@ -133,6 +135,26 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 ```
+
+Fetch and platform detection APIs return `chrome_for_testing::Result<T>`, a `rootcause` typed error report. If
+your application uses a generic error boundary, convert the report with `err.into_boxed_error()`.
+
+## Modeled API's
+
+This crate currently models
+
+| Modeled | Endpoint                                            | Description                                                                                                                         |
+|---------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| no      | known-good-versions.json                            | 	The versions for which all CfT assets are available for download. Useful for bisecting.                                            |
+| yes     | known-good-versions-with-downloads.json             | 	Same as above, but with an extra downloads property for each version, listing the full download URLs per asset.                    |
+| no      | last-known-good-versions.json                       | 	The latest versions for which all CfT assets are available for download, for each Chrome release channel (Stable/Beta/Dev/Canary). |
+| yes     | last-known-good-versions-with-downloads.json        | 	Same as above, but with an extra downloads property for each channel, listing the full download URLs per asset.                    |
+| no      | latest-patch-versions-per-build.json                | 	The latest versions for which all CfT assets are available for download, for each known combination of MAJOR.MINOR.BUILD versions. |
+| no      | latest-patch-versions-per-build-with-downloads.json | 	Same as above, but with an extra downloads property for each version, listing the full download URLs per asset.                    |
+| no      | latest-versions-per-milestone.json                  | 	The latest versions for which all CfT assets are available for download, for each Chrome milestone.                                |
+| no      | latest-versions-per-milestone-with-downloads.json   | 	Same as above, but with an extra downloads property for each milestone, listing the full download URLs per asset.                  |
+
+The (historical) `LATEST_RELEASE_*` endpoints are also not modeled.
 
 ## License
 

@@ -1,8 +1,8 @@
 //! # Chrome for Testing API Client
 //!
 //! This crate provides programmatic access to "chrome-for-testing" JSON APIs,
-//! which are used to retrieve version details and other relevant information about
-//! `Chrome` and `ChromeDriver` for testing purposes.
+//! which are used to retrieve version details and download URLs for `Chrome`, `ChromeDriver`, and
+//! Chrome Headless Shell for testing purposes.
 //!
 //! ## Modules Overview
 //!
@@ -13,12 +13,14 @@
 //! The crate leverages the following JSON API endpoints:
 //!
 //! - **Last Known Good Versions**:
-//!   Recent good versions for each release channel (Stable/Beta/Dev/Canary). Perfect if you just
-//!   need the "latest stable" version for example.
+//!   Recent good versions for each release channel (Stable/Beta/Dev/Canary), including `chrome`,
+//!   `chromedriver`, and `chrome-headless-shell` downloads. Perfect if you just need the "latest
+//!   stable" version for example.
 //!
 //! - **Known Good Versions**:
 //!   All known good versions. Longer API response, not pre-grouped per release channel. Good fit
-//!   if you have a hardcoded old version that you want to resolve a download URL for.
+//!   if you have a hardcoded old version that you want to resolve a download URL for. Older
+//!   entries may omit `chromedriver` and `chrome-headless-shell` downloads.
 //!
 //! For detailed documentation on these APIs, see the
 //! [official Chrome for Testing documentation](https://github.com/GoogleChromeLabs/chrome-for-testing#json-api-endpoints).
@@ -67,3 +69,6 @@ pub use api::platform::Platform;
 pub use api::version::ParseVersionError;
 pub use api::version::Version;
 pub use error::Error;
+
+/// Result type returned by fallible crate APIs.
+pub type Result<T, E = Error> = std::result::Result<T, rootcause::Report<E>>;
