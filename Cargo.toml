@@ -1,6 +1,6 @@
 [package]
 name = "chrome-for-testing"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 rust-version = "1.89.0"
 repository = "https://github.com/lpotthast/chrome-for-testing"
@@ -12,27 +12,19 @@ keywords = ["chrome", "chromedriver", "chromium", "selenium", "browser-testing"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 authors = ["Lukas Potthast <privat@lukas-potthast.de>"]
-exclude = [
-    ".github/",
-    ".idea/",
-    ".vscode/",
-    ".claude/",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "Justfile",
-]
+exclude = [".github/", ".idea/", "AGENTS.md", "Justfile"]
 
 [dependencies]
 reqwest = { version = "0.13.2", features = ["json"] }
-rootcause = "0.12.1"
+rootcause = "0.13.0"
 serde = { version = "1.0.220", features = ["derive"] }
 thiserror = "2.0.5"
 time = { version = "0.3.47", features = ["serde", "parsing", "formatting"] }
 url = "2.4.0"
 
 [dev-dependencies]
-assertr = "0.5.0"
+assertr = "0.6.0"
 mockito = "1.7.2"
-serde_json = "1.0.149"
-time = { version = "0.3.47", features = ["macros"] }
-tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
+serde_json = "1.0.151"
+time = { version = "0.3.55", features = ["macros"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }

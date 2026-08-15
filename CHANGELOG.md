@@ -2,8 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/),
-and this project adheres to [Semantic Versioning](https://semver.org/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
+to [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+## [0.5.0] - 2026-08-15
+
+### Added
+
+- Add `Platform::LinuxArm64`, including target detection, serde support, and archive executable paths for Chrome,
+  ChromeDriver, and Chrome Headless Shell.
+
+### Changed
+
+- **Breaking:** Upgrade `rootcause` to 0.13.0.
+- Upgrade `assertr` to 0.6.0.
 
 ## [0.4.0] - 2026-04-13
 
@@ -27,8 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Breaking:** `Channel` is no longer `Copy` because it can now preserve unknown upstream channel names.
 - **Breaking:** `Channel::from_str()` now accepts unknown non-empty channel names as `Channel::Other`.
 - **Breaking:** `FromStr` impls for `Channel`, `Platform`, and `Version` now return typed `rootcause::Report` values
-  while
-  preserving the dedicated parse error contexts.
+  while preserving the dedicated parse error contexts.
 - **Breaking:** `KnownGoodDownloads` now has the additional public `chrome_headless_shell` field.
 - **Breaking:** `LastKnownGoodVersions::channels` is private; use `channels()` to inspect the full channel map.
 - **Breaking:** `Platform::chrome_binary_name()` is now `Platform::chrome_executable_name()`.
@@ -139,7 +152,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `HasVersion` trait providing a common interface for version types.
 - ChromeDriver log level configuration.
 
-[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.5.0...HEAD
+
+[0.5.0]: https://github.com/lpotthast/chrome-for-testing/compare/v0.4.0...v0.5.0
 
 [0.4.0]: https://github.com/lpotthast/chrome-for-testing/compare/v0.3.0...v0.4.0
 

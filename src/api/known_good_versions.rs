@@ -178,7 +178,7 @@ mod tests {
             .unwrap();
 
         assert_that!(data).is_equal_to(KnownGoodVersions {
-            timestamp: datetime!(2026-04-13 08:53:52.847 UTC),
+            timestamp: datetime!(2026-08-15 08:10:27.304 UTC),
             versions: vec![
                 VersionWithoutChannel {
                     version: Version { major: 113, minor: 0, patch: 5672, build: 0 },
@@ -196,29 +196,32 @@ mod tests {
                     },
                 },
                 VersionWithoutChannel {
-                    version: Version { major: 149, minor: 0, patch: 7789, build: 0 },
-                    revision: String::from("1613465"),
+                    version: Version { major: 153, minor: 0, patch: 8009, build: 0 },
+                    revision: String::from("1679704"),
                     downloads: Downloads {
                         chrome: vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chrome-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chrome-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chrome-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chrome-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chrome-win64.zip") },
+                            Download { platform: Platform::LinuxArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux-arm64/chrome-linux-arm64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux64/chrome-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-arm64/chrome-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-x64/chrome-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win32/chrome-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win64/chrome-win64.zip") },
                         ],
                         chromedriver: Some(vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chromedriver-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chromedriver-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chromedriver-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chromedriver-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chromedriver-win64.zip") },
+                            Download { platform: Platform::LinuxArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux-arm64/chromedriver-linux-arm64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux64/chromedriver-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-arm64/chromedriver-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-x64/chromedriver-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win32/chromedriver-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win64/chromedriver-win64.zip") },
                         ]),
                         chrome_headless_shell: Some(vec![
-                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/linux64/chrome-headless-shell-linux64.zip") },
-                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
-                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/mac-x64/chrome-headless-shell-mac-x64.zip") },
-                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win32/chrome-headless-shell-win32.zip") },
-                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/149.0.7789.0/win64/chrome-headless-shell-win64.zip") },
+                            Download { platform: Platform::LinuxArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux-arm64/chrome-headless-shell-linux-arm64.zip") },
+                            Download { platform: Platform::Linux64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/linux64/chrome-headless-shell-linux64.zip") },
+                            Download { platform: Platform::MacArm64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-arm64/chrome-headless-shell-mac-arm64.zip") },
+                            Download { platform: Platform::MacX64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/mac-x64/chrome-headless-shell-mac-x64.zip") },
+                            Download { platform: Platform::Win32, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win32/chrome-headless-shell-win32.zip") },
+                            Download { platform: Platform::Win64, url: String::from("https://storage.googleapis.com/chrome-for-testing-public/153.0.8009.0/win64/chrome-headless-shell-win64.zip") },
                         ]),
                     },
                 },

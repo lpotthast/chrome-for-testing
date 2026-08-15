@@ -9,7 +9,9 @@ use std::str::FromStr;
 
 /// Error returned when parsing a platform string fails.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("Unknown platform: '{value}'. Expected one of: linux64, mac-arm64, mac-x64, win32, win64")]
+#[error(
+    "Unknown platform: '{value}'. Expected one of: linux-arm64, linux64, mac-arm64, mac-x64, win32, win64"
+)]
 pub struct ParsePlatformError {
     value: String,
 }
@@ -39,11 +41,16 @@ pub enum Platform {
     /// Windows 64-bit platform.
     #[serde(rename = "win64")]
     Win64,
+
+    /// Linux ARM64 platform.
+    #[serde(rename = "linux-arm64")]
+    LinuxArm64,
 }
 
 impl Display for Platform {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
+            Platform::LinuxArm64 => "linux-arm64",
             Platform::Linux64 => "linux64",
             Platform::MacArm64 => "mac-arm64",
             Platform::MacX64 => "mac-x64",
@@ -58,6 +65,7 @@ impl FromStr for Platform {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "linux-arm64" => Ok(Platform::LinuxArm64),
             "linux64" => Ok(Platform::Linux64),
             "mac-arm64" => Ok(Platform::MacArm64),
             "mac-x64" => Ok(Platform::MacX64),
@@ -77,8 +85,12 @@ impl Platform {
     ///
     /// Returns an error if the current OS/architecture combination is not supported.
     pub fn detect() -> crate::Result<Platform> {
-        match consts::OS {
-            os @ "windows" => match consts::ARCH {
+        Self::detect_target(consts::OS, consts::ARCH)
+    }
+
+    fn detect_target(os: &'static str, arch: &'static str) -> crate::Result<Platform> {
+        match os {
+            os @ "windows" => match arch {
                 "x86" => Ok(Platform::Win32),
                 "x86_64" => Ok(Platform::Win64),
                 arch => Err(report!(Error::UnsupportedPlatform {
@@ -86,14 +98,15 @@ impl Platform {
                     arch: Cow::Borrowed(arch),
                 })),
             },
-            os @ "linux" => match consts::ARCH {
+            os @ "linux" => match arch {
                 "x86_64" => Ok(Platform::Linux64),
+                "aarch64" => Ok(Platform::LinuxArm64),
                 arch => Err(report!(Error::UnsupportedPlatform {
                     os: Cow::Borrowed(os),
                     arch: Cow::Borrowed(arch),
                 })),
             },
-            os @ "macos" => match consts::ARCH {
+            os @ "macos" => match arch {
                 "x86_64" => Ok(Platform::MacX64),
                 "arm" | "aarch64" => Ok(Platform::MacArm64),
                 arch => Err(report!(Error::UnsupportedPlatform {
@@ -103,7 +116,7 @@ impl Platform {
             },
             os => Err(report!(Error::UnsupportedPlatform {
                 os: Cow::Borrowed(os),
-                arch: Cow::Borrowed(consts::ARCH),
+                arch: Cow::Borrowed(arch),
             })),
         }
     }
@@ -112,7 +125,7 @@ impl Platform {
     #[must_use]
     pub fn chrome_executable_name(self) -> &'static str {
         match self {
-            Platform::Linux64 => "chrome",
+            Platform::Linux64 | Platform::LinuxArm64 => "chrome",
             Platform::MacArm64 | Platform::MacX64 => "Google Chrome for Testing",
             Platform::Win32 | Platform::Win64 => "chrome.exe",
         }
@@ -123,6 +136,7 @@ impl Platform {
     pub fn chrome_executable_path(self) -> &'static Path {
         match self {
             Platform::Linux64 => Path::new("chrome-linux64/chrome"),
+            Platform::LinuxArm64 => Path::new("chrome-linux-arm64/chrome"),
             Platform::MacArm64 => Path::new(
                 "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
             ),
@@ -138,7 +152,9 @@ impl Platform {
     #[must_use]
     pub fn chromedriver_executable_name(self) -> &'static str {
         match self {
-            Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chromedriver",
+            Platform::Linux64 | Platform::LinuxArm64 | Platform::MacX64 | Platform::MacArm64 => {
+                "chromedriver"
+            }
             Platform::Win32 | Platform::Win64 => "chromedriver.exe",
         }
     }
@@ -147,6 +163,7 @@ impl Platform {
     #[must_use]
     pub fn chromedriver_executable_path(self) -> &'static Path {
         match self {
+            Platform::LinuxArm64 => Path::new("chromedriver-linux-arm64/chromedriver"),
             Platform::Linux64 => Path::new("chromedriver-linux64/chromedriver"),
             Platform::MacArm64 => Path::new("chromedriver-mac-arm64/chromedriver"),
             Platform::MacX64 => Path::new("chromedriver-mac-x64/chromedriver"),
@@ -159,7 +176,9 @@ impl Platform {
     #[must_use]
     pub fn chrome_headless_shell_executable_name(self) -> &'static str {
         match self {
-            Platform::Linux64 | Platform::MacX64 | Platform::MacArm64 => "chrome-headless-shell",
+            Platform::LinuxArm64 | Platform::Linux64 | Platform::MacArm64 | Platform::MacX64 => {
+                "chrome-headless-shell"
+            }
             Platform::Win32 | Platform::Win64 => "chrome-headless-shell.exe",
         }
     }
@@ -169,6 +188,9 @@ impl Platform {
     #[must_use]
     pub fn chrome_headless_shell_executable_path(self) -> &'static Path {
         match self {
+            Platform::LinuxArm64 => {
+                Path::new("chrome-headless-shell-linux-arm64/chrome-headless-shell")
+            }
             Platform::Linux64 => Path::new("chrome-headless-shell-linux64/chrome-headless-shell"),
             Platform::MacArm64 => {
                 Path::new("chrome-headless-shell-mac-arm64/chrome-headless-shell")
@@ -183,7 +205,7 @@ impl Platform {
     #[must_use]
     pub fn is_linux(&self) -> bool {
         match self {
-            Platform::Linux64 => true,
+            Platform::LinuxArm64 | Platform::Linux64 => true,
             Platform::MacArm64 | Platform::MacX64 | Platform::Win32 | Platform::Win64 => false,
         }
     }
@@ -193,7 +215,7 @@ impl Platform {
     pub fn is_macos(&self) -> bool {
         match self {
             Platform::MacArm64 | Platform::MacX64 => true,
-            Platform::Linux64 | Platform::Win32 | Platform::Win64 => false,
+            Platform::LinuxArm64 | Platform::Linux64 | Platform::Win32 | Platform::Win64 => false,
         }
     }
 
@@ -202,7 +224,9 @@ impl Platform {
     pub fn is_windows(&self) -> bool {
         match self {
             Platform::Win32 | Platform::Win64 => true,
-            Platform::Linux64 | Platform::MacArm64 | Platform::MacX64 => false,
+            Platform::LinuxArm64 | Platform::Linux64 | Platform::MacArm64 | Platform::MacX64 => {
+                false
+            }
         }
     }
 }
@@ -215,6 +239,7 @@ mod tests {
     #[test]
     fn parse_to_string_round_trip() {
         let platforms = [
+            ("linux-arm64", Platform::LinuxArm64),
             ("linux64", Platform::Linux64),
             ("mac-arm64", Platform::MacArm64),
             ("mac-x64", Platform::MacX64),
@@ -238,6 +263,7 @@ mod tests {
     #[test]
     fn executable_path_file_names_match_executable_names() {
         let platforms = [
+            Platform::LinuxArm64,
             Platform::Linux64,
             Platform::MacArm64,
             Platform::MacX64,
@@ -272,6 +298,8 @@ mod tests {
 
     #[test]
     fn serialized_value_matches_display_output() {
+        assert_that!(serde_json::to_string(&Platform::LinuxArm64).unwrap())
+            .is_equal_to(String::from("\"linux-arm64\""));
         assert_that!(serde_json::to_string(&Platform::Linux64).unwrap())
             .is_equal_to(String::from("\"linux64\""));
         assert_that!(serde_json::to_string(&Platform::MacArm64).unwrap())

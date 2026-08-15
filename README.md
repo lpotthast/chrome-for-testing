@@ -1,9 +1,14 @@
 # chrome-for-testing
 
-Provides serde-enabled type definitions covering the main **chrome-for-testing** JSON API responses
-with download URLs, and programmatic access to those endpoints through `reqwest`, allowing you to
-fetch information about available Chrome, ChromeDriver, and Chrome Headless Shell versions for
-automated testing.
+[![Crates.io](https://img.shields.io/crates/v/chrome-for-testing.svg)](https://crates.io/crates/chrome-for-testing)
+[![Docs.rs](https://docs.rs/chrome-for-testing/badge.svg)](https://docs.rs/chrome-for-testing)
+[![CI](https://github.com/lpotthast/chrome-for-testing/actions/workflows/ci.yml/badge.svg)](https://github.com/lpotthast/chrome-for-testing/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/badge/MSRV-1.89.0-blue.svg)](https://github.com/lpotthast/chrome-for-testing/blob/main/Cargo.toml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/crates/l/chrome-for-testing.svg)](#license)
+
+Provides serde-enabled type definitions covering the main **chrome-for-testing** JSON API responses with download URLs,
+and programmatic access to those endpoints through `reqwest`, allowing you to fetch information about available Chrome,
+ChromeDriver, and Chrome Headless Shell versions for automated testing.
 
 ## Links
 
@@ -16,8 +21,8 @@ automated testing.
 
 ### chrome-for-testing-manager
 
-You may want to check out [chrome-for-testing-manager](https://github.com/lpotthast/chrome-for-testing-manager), a
-crate building upon this one to allow easy selection and installation of chrome-for-testing versions.\
+You may want to check out [chrome-for-testing-manager](https://github.com/lpotthast/chrome-for-testing-manager), a crate
+building upon this one to allow easy selection and installation of chrome-for-testing versions.\
 It also comes with support for the [thirtyfour](https://crates.io/crates/thirtyfour) WebDriver crate.
 
 ## Installation
@@ -26,7 +31,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chrome-for-testing = "0.4"
+chrome-for-testing = "0.5.0"
 ```
 
 Or use `cargo add`:
@@ -136,15 +141,15 @@ async fn main() -> Result<()> {
 }
 ```
 
-Fetch and platform detection APIs return `chrome_for_testing::Result<T>`, a `rootcause` typed error report. If
-your application uses a generic error boundary, convert the report with `err.into_boxed_error()`.
+Fetch and platform detection APIs return `chrome_for_testing::Result<T>`, a `rootcause` typed error report. If your
+application uses a generic error boundary, convert the report with `err.into_boxed_error()`.
 
 ## Modeled API's
 
 This crate currently models
 
-| Modeled | Endpoint                                            | Description                                                                                                                         |
-|---------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| Modeled | Endpoint                                            | Description                                                                                                                        |
+|---------|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | no      | known-good-versions.json                            | 	The versions for which all CfT assets are available for download. Useful for bisecting.                                            |
 | yes     | known-good-versions-with-downloads.json             | 	Same as above, but with an extra downloads property for each version, listing the full download URLs per asset.                    |
 | no      | last-known-good-versions.json                       | 	The latest versions for which all CfT assets are available for download, for each Chrome release channel (Stable/Beta/Dev/Canary). |
