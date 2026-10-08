@@ -182,7 +182,7 @@ mod tests {
             "#
             );
             let result = serde_json::from_str::<Version>(&json);
-            assert_that!(result).is_ok().is_equal_to(expected);
+            assert_that!(result).get_ok().is_equal_to(expected);
         }
     }
 
@@ -220,8 +220,8 @@ mod tests {
             );
             let result = serde_json::from_str::<Version>(&json);
             assert_that!(result)
-                .is_err()
-                .derive(std::string::ToString::to_string)
+                .get_err()
+                .derive_owned(ToString::to_string)
                 .contains(expected_error_substring);
         }
     }
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn parse_valid() {
         assert_that!("1.2.3.4".parse::<Version>())
-            .is_ok()
+            .get_ok()
             .is_equal_to(Version {
                 major: 1,
                 minor: 2,
@@ -336,7 +336,7 @@ mod tests {
                 build: 4,
             });
         assert_that!("0.0.0.0".parse::<Version>())
-            .is_ok()
+            .get_ok()
             .is_equal_to(Version {
                 major: 0,
                 minor: 0,
