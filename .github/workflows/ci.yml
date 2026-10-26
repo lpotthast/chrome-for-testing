@@ -47,7 +47,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets --locked -- -D warnings -W clippy::pedantic
+      - run: cargo clippy --all-targets --locked -- -D warnings
 
   test:
     name: Test (including live API)

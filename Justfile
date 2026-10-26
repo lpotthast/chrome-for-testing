@@ -20,7 +20,7 @@ msrv:
 
 # Lint the code.
 clippy:
-    cargo clippy --all -- -W clippy::pedantic
+    cargo clippy --all
 
 # Update all deps; sort all Cargo.toml deps; format, check and lint all code; run all tests.
 tidy:
@@ -28,6 +28,6 @@ tidy:
     cargo sort --workspace
     cargo fmt
     cargo check --all
-    cargo clippy --all -- -W clippy::pedantic
+    cargo clippy --all
     cargo test --all
     cargo doc --no-deps

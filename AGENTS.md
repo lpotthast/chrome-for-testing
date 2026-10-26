@@ -14,7 +14,7 @@ errors in `src/error.rs`. Integration tests are in `tests/integration.rs`; unit 
 - `cargo fmt`: format Rust code.
 - `cargo test --all`: run unit and integration tests.
 - `cargo test <test_name>`: run a focused test by name.
-- `just clippy`: run `cargo clippy --all -- -W clippy::pedantic`.
+- `just clippy`: run `cargo clippy --all` (`Cargo.toml` denies `all` and `pedantic`).
 - `just tidy`: update deps, sort `Cargo.toml`, format, check, lint, test, and build docs.
 - `just install-tools`: install tools used by `just` recipes.
 - `just minimal-versions`: verify direct minimum dependency bounds.
