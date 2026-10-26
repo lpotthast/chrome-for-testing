@@ -138,7 +138,7 @@ mod tests {
     fn parse_channels() {
         for (test, expected) in channels() {
             assert_that!(test.parse::<Channel>())
-                .is_ok()
+                .get_ok()
                 .is_equal_to(expected.clone());
         }
     }
@@ -147,7 +147,7 @@ mod tests {
     fn deserialize_channels() {
         for (test, expected) in channels() {
             assert_that!(serde_json::from_str::<Channel>(&format!(r#""{test}""#)))
-                .is_ok()
+                .get_ok()
                 .is_equal_to(expected);
         }
     }
@@ -164,7 +164,7 @@ mod tests {
 
         for (expected, channel) in channels() {
             assert_that!(serde_json::to_string(&channel))
-                .is_ok()
+                .get_ok()
                 .is_equal_to(format!(
                     r#""{}""#,
                     match channel {

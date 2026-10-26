@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.6.0] - 2026-10-08
+
+### Changed
+
+- **Breaking:** All dependencies are now declared with `default-features = false`, enabling only the features this
+  crate needs. Notably, `reqwest` no longer enables a TLS backend, HTTP/2, charset decoding, or system proxy support.
+  Enable these on your own `reqwest` dependency (its default features do).
+- Upgrade `assertr` to 0.7.1.
 
 ## [0.5.0] - 2026-08-15
 
@@ -152,7 +159,9 @@ to [Semantic Versioning](https://semver.org/).
 - `HasVersion` trait providing a common interface for version types.
 - ChromeDriver log level configuration.
 
-[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/lpotthast/chrome-for-testing/compare/v0.6.0...HEAD
+
+[0.5.0]: https://github.com/lpotthast/chrome-for-testing/compare/v0.5.0...v0.6.0
 
 [0.5.0]: https://github.com/lpotthast/chrome-for-testing/compare/v0.4.0...v0.5.0
 

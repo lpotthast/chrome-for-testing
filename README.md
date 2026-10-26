@@ -31,13 +31,22 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chrome-for-testing = "0.5.0"
+chrome-for-testing = "0.6.0"
 ```
 
 Or use `cargo add`:
 
 ```shell
 cargo add chrome-for-testing
+```
+
+This crate enables only the `reqwest` features it needs and does not choose a TLS backend. You pass in your own
+`reqwest::Client`, so make sure your `reqwest` dependency has TLS enabled (its default features do, e.g. via
+`rustls`), as the Chrome for Testing API is served over HTTPS:
+
+```toml
+[dependencies]
+reqwest = "0.13"
 ```
 
 ## Features

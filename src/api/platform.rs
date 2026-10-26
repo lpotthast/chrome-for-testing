@@ -248,7 +248,7 @@ mod tests {
         ];
         for (s, expected) in platforms {
             assert_that!(s.parse::<Platform>())
-                .is_ok()
+                .get_ok()
                 .is_equal_to(expected);
             assert_that!(expected.to_string()).is_equal_to(s);
         }

@@ -444,8 +444,8 @@ mod tests {
         let result = serde_json::from_str::<LastKnownGoodVersions>(&json);
 
         assert_that!(result)
-            .is_err()
-            .derive(ToString::to_string)
+            .get_err()
+            .derive_owned(ToString::to_string)
             .contains("expected channels.Stable.channel to be Stable, got Beta");
     }
 
@@ -462,8 +462,8 @@ mod tests {
 
         assert_that!(data.canary()).is_none();
         assert_that!(data.channel(&extended))
-            .is_some()
-            .derive(|it| it.channel.clone())
+            .get_some()
+            .derive_owned(|it| it.channel.clone())
             .is_equal_to(extended);
     }
 }

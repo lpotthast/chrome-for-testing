@@ -129,7 +129,7 @@ mod tests {
         };
 
         assert_that!(download.parsed_url().map(|url| url.to_string()))
-            .is_ok()
+            .get_ok()
             .is_equal_to("https://example.com/chrome.zip");
     }
 
