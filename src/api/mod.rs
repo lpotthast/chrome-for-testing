@@ -128,9 +128,9 @@ mod tests {
             url: String::from("https://example.com/chrome.zip"),
         };
 
-        assert_that!(download.parsed_url().map(|url| url.to_string()))
-            .get_ok()
-            .is_equal_to("https://example.com/chrome.zip");
+        assert_that!(download.parsed_url())
+            .ok()
+            .has_display_value("https://example.com/chrome.zip");
     }
 
     #[test]
@@ -140,13 +140,9 @@ mod tests {
             url: String::from("not a url"),
         };
 
-        let err = download.parsed_url().unwrap_err();
-
-        let Error::UrlParsing(url_error) = err.current_context() else {
-            panic!("expected URL parse error, got: {:?}", err.current_context());
-        };
-
-        assert_that!(url_error.to_string()).contains("relative URL without a base");
+        assert_that!(download.parsed_url())
+            .err()
+            .has_current_context_display_value("URL parse error: relative URL without a base");
     }
 
     #[tokio::test]

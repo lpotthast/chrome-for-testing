@@ -248,16 +248,22 @@ mod tests {
         ];
         for (s, expected) in platforms {
             assert_that!(s.parse::<Platform>())
-                .get_ok()
+                .ok()
                 .is_equal_to(expected);
-            assert_that!(expected.to_string()).is_equal_to(s);
+            assert_that!(expected).has_display_value(s);
         }
     }
 
     #[test]
     fn parse_invalid_variant_fails() {
-        assert_that!("Linux64".parse::<Platform>()).is_err();
-        assert_that!("unknown".parse::<Platform>()).is_err();
+        for value in ["Linux64", "unknown"] {
+            assert_that!(value.parse::<Platform>())
+                .err()
+                .current_context()
+                .is_equal_to(ParsePlatformError {
+                    value: value.to_owned(),
+                });
+        }
     }
 
     #[test]
@@ -272,37 +278,25 @@ mod tests {
         ];
 
         for platform in platforms {
-            assert_that!(
-                platform
-                    .chrome_executable_path()
-                    .file_name()
-                    .and_then(|it| it.to_str())
-            )
-            .is_equal_to(Some(platform.chrome_executable_name()));
-            assert_that!(
-                platform
-                    .chromedriver_executable_path()
-                    .file_name()
-                    .and_then(|it| it.to_str())
-            )
-            .is_equal_to(Some(platform.chromedriver_executable_name()));
-            assert_that!(
-                platform
-                    .chrome_headless_shell_executable_path()
-                    .file_name()
-                    .and_then(|it| it.to_str())
-            )
-            .is_equal_to(Some(platform.chrome_headless_shell_executable_name()));
+            assert_that!(platform.chrome_executable_path())
+                .has_file_name(platform.chrome_executable_name());
+            assert_that!(platform.chromedriver_executable_path())
+                .has_file_name(platform.chromedriver_executable_name());
+            assert_that!(platform.chrome_headless_shell_executable_path())
+                .has_file_name(platform.chrome_headless_shell_executable_name());
         }
     }
 
     #[test]
     fn serialized_value_matches_display_output() {
-        assert_that!(serde_json::to_string(&Platform::LinuxArm64).unwrap())
-            .is_equal_to(String::from("\"linux-arm64\""));
-        assert_that!(serde_json::to_string(&Platform::Linux64).unwrap())
-            .is_equal_to(String::from("\"linux64\""));
-        assert_that!(serde_json::to_string(&Platform::MacArm64).unwrap())
-            .is_equal_to(String::from("\"mac-arm64\""));
+        assert_that!(serde_json::to_string(&Platform::LinuxArm64))
+            .ok()
+            .is_equal_to(r#""linux-arm64""#);
+        assert_that!(serde_json::to_string(&Platform::Linux64))
+            .ok()
+            .is_equal_to(r#""linux64""#);
+        assert_that!(serde_json::to_string(&Platform::MacArm64))
+            .ok()
+            .is_equal_to(r#""mac-arm64""#);
     }
 }

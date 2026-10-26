@@ -182,7 +182,7 @@ mod tests {
             "#
             );
             let result = serde_json::from_str::<Version>(&json);
-            assert_that!(result).get_ok().is_equal_to(expected);
+            assert_that!(result).ok().is_equal_to(expected);
         }
     }
 
@@ -220,7 +220,7 @@ mod tests {
             );
             let result = serde_json::from_str::<Version>(&json);
             assert_that!(result)
-                .get_err()
+                .err()
                 .derive_owned(ToString::to_string)
                 .contains(expected_error_substring);
         }
@@ -246,7 +246,7 @@ mod tests {
             build: 42,
         };
         assert_that!(version)
-            .has_debug_value("Version { major: 115, minor: 785, patch: 5763, build: 42 }");
+            .has_debug_string("Version { major: 115, minor: 785, patch: 5763, build: 42 }");
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn parse_valid() {
         assert_that!("1.2.3.4".parse::<Version>())
-            .get_ok()
+            .ok()
             .is_equal_to(Version {
                 major: 1,
                 minor: 2,
@@ -336,7 +336,7 @@ mod tests {
                 build: 4,
             });
         assert_that!("0.0.0.0".parse::<Version>())
-            .get_ok()
+            .ok()
             .is_equal_to(Version {
                 major: 0,
                 minor: 0,
@@ -364,7 +364,7 @@ mod tests {
             build: 83,
         };
         let json = serde_json::to_string(&version).unwrap();
-        assert_that!(json.clone()).is_equal_to(String::from("\"132.0.6834.83\""));
+        assert_that!(json).is_equal_to(r#""132.0.6834.83""#);
         let deserialized: Version = serde_json::from_str(&json).unwrap();
         assert_that!(deserialized).is_equal_to(version);
     }
@@ -391,7 +391,7 @@ mod tests {
         };
         let mut versions = vec![v3, v1, v2];
         versions.sort();
-        assert_that!(versions).is_equal_to(vec![v1, v2, v3]);
+        assert_that!(versions).contains_exactly([v1, v2, v3]);
     }
 
     #[test]
@@ -411,6 +411,6 @@ mod tests {
         let mut set = HashSet::new();
         set.insert(v1);
         set.insert(v2);
-        assert_that!(set.len()).is_equal_to(1);
+        assert_that!(set).has_length(1);
     }
 }

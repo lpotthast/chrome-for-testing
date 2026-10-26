@@ -127,19 +127,20 @@ mod tests {
 
     #[test]
     fn parse_empty_string_fails() {
-        let err = "".parse::<Channel>().unwrap_err();
-
-        assert_that!(err.current_context()).is_equal_to(ParseChannelError {
-            value: String::new(),
-        });
+        assert_that!("".parse::<Channel>())
+            .err()
+            .current_context()
+            .is_equal_to(ParseChannelError {
+                value: String::new(),
+            });
     }
 
     #[test]
     fn parse_channels() {
         for (test, expected) in channels() {
             assert_that!(test.parse::<Channel>())
-                .get_ok()
-                .is_equal_to(expected.clone());
+                .ok()
+                .is_equal_to(expected);
         }
     }
 
@@ -147,7 +148,7 @@ mod tests {
     fn deserialize_channels() {
         for (test, expected) in channels() {
             assert_that!(serde_json::from_str::<Channel>(&format!(r#""{test}""#)))
-                .get_ok()
+                .ok()
                 .is_equal_to(expected);
         }
     }
@@ -164,7 +165,7 @@ mod tests {
 
         for (expected, channel) in channels() {
             assert_that!(serde_json::to_string(&channel))
-                .get_ok()
+                .ok()
                 .is_equal_to(format!(
                     r#""{}""#,
                     match channel {
